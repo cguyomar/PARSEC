@@ -206,7 +206,6 @@ workflow SPARSE {
         meta, files, intervals ->
         [meta, files[1], files[0],intervals]
     }
-    .take(12)
     .set { index_bam_grouped_by_interval }
     // [meta, [bam], [bai], intervals]
     
