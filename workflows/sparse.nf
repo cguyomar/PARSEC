@@ -50,6 +50,7 @@ include { SAMTOOLS_MERGE_ON_INTERVAL } from '../modules/local/samtools_merge_on_
 //
 include { QUALIMAP_BAMQC } from '../modules/nf-core/qualimap/bamqc/main'  
 include { BEDTOOLS_MAKEWINDOWS } from '../modules/nf-core/bedtools/makewindows/main' 
+include { BEDTOOLS_SLOP } from '../modules/nf-core/bedtools/slop/main'
 include { SAMTOOLS_INDEX } from '../modules/nf-core/samtools/index/main'
 include { BCFTOOLS_MPILEUP } from '../modules/nf-core/bcftools/mpileup/main'
 include { BCFTOOLS_CONCAT } from '../modules/nf-core/bcftools/concat/main'
@@ -116,60 +117,102 @@ workflow SPARSE {
         ]
     )
 
+    BEDTOOLS_SLOP(
+        BEDTOOLS_MAKEWINDOWS.out.bed,
+        file(params.genome_sizes, checkIfExists: true)
+    )
+
+    BEDTOOLS_MAKEWINDOWS.out.bed
+        .join(BEDTOOLS_SLOP.out.bed)
+        .set { bedFiles }
+
     // Will group together small intervals
-    BEDTOOLS_MAKEWINDOWS.out.bed.flatten()
-        .last()
-        .flatMap { intervalFile ->
-            def i = 0
+    // We do it on the calling intervals but group the imputation intervals accordingly
+    bedFiles
+        .flatMap { meta,bed,sloppedBed ->
+            def nb_interval = 0
             def chunk_size = 0
             returnedIntervals = []
             tmpIntervals = []
-            for (line in intervalFile.readLines()) {
+            returnedIntervals_slopped = []
+            tmpIntervals_slopped = []
+            chunk_ids = []
+            res = []
+
+            lines = bed.readLines()
+            lines_slopped = sloppedBed.readLines()
+            for (int i = 0; i < lines.size(); i++) {
+                def line = lines[i]
+                def line_slopped = lines_slopped[i]
                 fields = line.split('\t')
                 len = fields[2].toInteger()
-                if ((chunk_size + len) >= 10000000) {
-                    chunk_id = "chunk_" + i.toString()
-                    i += 1
-                    for (interval in tmpIntervals) {
-                        returnedIntervals.add([chunk_id,interval])
+                if ((chunk_size + len) >= params.window_size) {
+                    chunk_id = "chunk_" + nb_interval.toString()
+                    chunk_ids.add(chunk_id)
+                    nb_interval += 1
+                    for (int j = 0; j < tmpIntervals.size(); j++) {
+                        returnedIntervals.add(tmpIntervals[j])
+                        returnedIntervals_slopped.add(tmpIntervals_slopped[j])
+                        res.add([chunk_id,tmpIntervals[j],tmpIntervals_slopped[j]])
                     }
                     tmpIntervals = [line]
+                    tmpIntervals_slopped = [line_slopped]
                     chunk_size = len
                 } else {
                     tmpIntervals.add(line)
+                    tmpIntervals_slopped.add(line_slopped)
                     chunk_size += len
                 }
             }
-            returnedIntervals
+            res
         }
-        .collectFile() { item ->
-            [ "${item[0]}.bed",item[1] + '\n']
+        // .view()
+        .multiMap { it ->
+            calling: [ it[0], it[1] ]
+            imputation: [ it[0], it[2] ]
         }
-        .set { merged_intervals }
-    
-    
-
-    // intervals = BEDTOOLS_MAKEWINDOWS.out.bed
-    //     .splitText( by: 1, file: true)
-    //     .map {
-    //         it -> it[1]
-    //     }
-    //     .take( 3 ) // for testing
+        .set { intervals }
     
     /// Read interval ids to update the meta map
     /// [interval, chunk_id]
-    merged_intervals
+    intervals.calling
         .map {
-            it -> [it.baseName,it]
+            it -> [[ id:it[0]],it]
         }
-        .set { merged_intervals }
+        .set { intervals_for_calling }
 
+    intervals.imputation
+        .map {
+            it -> [[ id:it[0]],it]
+        }
+        .set { intervals_for_imputation }
+
+
+    // Write intervals to file
+    intervals.imputation
+    .collectFile() { item ->
+        [ "${item[0]}.imputation.bed",item[1] + '\n' ]
+    }
+    .map {
+        it -> [[ id:it.baseName.replaceFirst(/(chunk_\d+)\..*/, '$1') ],it]
+        }
+    .set { intervals_for_imputation }
+    
+    intervals.calling
+    .collectFile() { item ->
+        [ "${item[0]}.calling.bed",item[1] + '\n']
+    }
+    .map {
+        it -> [[ id:it.baseName.replaceFirst(/(chunk_\d+)\..*/, '$1') ],it]
+    }
+    .set { intervals_for_calling }
+    // meta, bed
 
     bam_channel_splitted = bam_channel
-        .combine(merged_intervals)
-        .map { meta, bam, chunk_id, interval -> 
+        .combine(intervals_for_calling)
+        .map { meta, bam, meta_interval, interval -> 
             [ 
-                [ id:chunk_id ],
+                meta_interval,
                 bam,
                 interval
             ]
@@ -183,11 +226,11 @@ workflow SPARSE {
             [meta, bamlist, interval]
         }
         // .view()
-    // [meta, [[bam,bai]], interval]
+    // [meta, [bams], interval]
 
     // Same for bai files
     SAMTOOLS_INDEX.out.bai
-        .combine(merged_intervals)
+        .combine(intervals_for_calling)
         .map { meta, bai, chunk_id, interval -> 
             [ 
                 [ id:chunk_id ],
@@ -209,9 +252,6 @@ workflow SPARSE {
     .set { index_bam_grouped_by_interval }
     // [meta, [bam], [bai], intervals]
     
-
-
-
     ///
     /// MODULE: Run Samtools merge
     ///
@@ -262,32 +302,32 @@ workflow SPARSE {
     // )
     // ch_versions = ch_versions.mix(QUALIMAP_BAMQC.out.versions.first())
 
-    CUSTOM_DUMPSOFTWAREVERSIONS (
-        ch_versions.unique().collectFile(name: 'collated_versions.yml')
-    )
+//     CUSTOM_DUMPSOFTWAREVERSIONS (
+//         ch_versions.unique().collectFile(name: 'collated_versions.yml')
+//     )
 
-    //
-    // MODULE: MultiQC
-    //
-    workflow_summary    = WorkflowSparse.paramsSummaryMultiqc(workflow, summary_params)
-    ch_workflow_summary = Channel.value(workflow_summary)
+//     //
+//     // MODULE: MultiQC
+//     //
+//     workflow_summary    = WorkflowSparse.paramsSummaryMultiqc(workflow, summary_params)
+//     ch_workflow_summary = Channel.value(workflow_summary)
 
-    methods_description    = WorkflowSparse.methodsDescriptionText(workflow, ch_multiqc_custom_methods_description, params)
-    ch_methods_description = Channel.value(methods_description)
+//     methods_description    = WorkflowSparse.methodsDescriptionText(workflow, ch_multiqc_custom_methods_description, params)
+//     ch_methods_description = Channel.value(methods_description)
 
-    ch_multiqc_files = Channel.empty()
-    ch_multiqc_files = ch_multiqc_files.mix(ch_workflow_summary.collectFile(name: 'workflow_summary_mqc.yaml'))
-    ch_multiqc_files = ch_multiqc_files.mix(ch_methods_description.collectFile(name: 'methods_description_mqc.yaml'))
-    ch_multiqc_files = ch_multiqc_files.mix(CUSTOM_DUMPSOFTWAREVERSIONS.out.mqc_yml.collect())
-    // ch_multiqc_files = ch_multiqc_files.mix(QUALIMAP_BAMQC.out.zip.collect{it[1]}.ifEmpty([]))
+//     ch_multiqc_files = Channel.empty()
+//     ch_multiqc_files = ch_multiqc_files.mix(ch_workflow_summary.collectFile(name: 'workflow_summary_mqc.yaml'))
+//     ch_multiqc_files = ch_multiqc_files.mix(ch_methods_description.collectFile(name: 'methods_description_mqc.yaml'))
+//     ch_multiqc_files = ch_multiqc_files.mix(CUSTOM_DUMPSOFTWAREVERSIONS.out.mqc_yml.collect())
+//     // ch_multiqc_files = ch_multiqc_files.mix(QUALIMAP_BAMQC.out.zip.collect{it[1]}.ifEmpty([]))
 
-    MULTIQC (
-        ch_multiqc_files.collect(),
-        ch_multiqc_config.toList(),
-        ch_multiqc_custom_config.toList(),
-        ch_multiqc_logo.toList()
-    )
-    multiqc_report = MULTIQC.out.report.toList()
+//     MULTIQC (
+//         ch_multiqc_files.collect(),
+//         ch_multiqc_config.toList(),
+//         ch_multiqc_custom_config.toList(),
+//         ch_multiqc_logo.toList()
+//     )
+//     multiqc_report = MULTIQC.out.report.toList()
 }
 
 /*
