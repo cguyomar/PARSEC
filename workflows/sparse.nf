@@ -130,43 +130,22 @@ workflow SPARSE {
     // We do it on the calling intervals but group the imputation intervals accordingly
     bedFiles
         .flatMap { meta,bed,sloppedBed ->
-            def nb_interval = 0
-            def chunk_size = 0
-            returnedIntervals = []
-            tmpIntervals = []
-            returnedIntervals_slopped = []
-            tmpIntervals_slopped = []
-            chunk_ids = []
-            res = []
-
             lines = bed.readLines()
             lines_slopped = sloppedBed.readLines()
+            chunk_ids = []
+            res = []
+            def nb_interval = 0
             for (int i = 0; i < lines.size(); i++) {
                 def line = lines[i]
                 def line_slopped = lines_slopped[i]
-                fields = line.split('\t')
-                len = fields[2].toInteger()
-                if ((chunk_size + len) >= params.window_size) {
                     chunk_id = "chunk_" + nb_interval.toString()
                     chunk_ids.add(chunk_id)
                     nb_interval += 1
-                    for (int j = 0; j < tmpIntervals.size(); j++) {
-                        returnedIntervals.add(tmpIntervals[j])
-                        returnedIntervals_slopped.add(tmpIntervals_slopped[j])
-                        res.add([chunk_id,tmpIntervals[j],tmpIntervals_slopped[j]])
-                    }
-                    tmpIntervals = [line]
-                    tmpIntervals_slopped = [line_slopped]
-                    chunk_size = len
-                } else {
-                    tmpIntervals.add(line)
-                    tmpIntervals_slopped.add(line_slopped)
-                    chunk_size += len
-                }
+
+                res.add([chunk_id,line,line_slopped])
             }
             res
         }
-        // .view()
         .multiMap { it ->
             calling: [ it[0], it[1] ]
             imputation: [ it[0], it[2] ]
