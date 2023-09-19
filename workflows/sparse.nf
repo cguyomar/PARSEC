@@ -212,7 +212,7 @@ workflow SPARSE {
         .combine(intervals_for_calling)
         .map { meta, bai, chunk_id, interval -> 
             [ 
-                [ id:chunk_id ],
+                [ id:chunk_id.id ],
                 bai,
                 interval
             ]
