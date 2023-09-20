@@ -126,8 +126,7 @@ workflow SPARSE {
         .join(BEDTOOLS_SLOP.out.bed)
         .set { bedFiles }
 
-    // Will group together small intervals
-    // We do it on the calling intervals but group the imputation intervals accordingly
+    // Turn interval files into one bed file per line/chunk
     bedFiles
         .flatMap { meta,bed,sloppedBed ->
             lines = bed.readLines()
