@@ -98,6 +98,8 @@ workflow SPARSE {
         ]
     }
 
+    known_variants = Channel.fromPath(params.known_variants, checkIfExists: true)
+
     ///
     /// MODULE: Run Samtools index
     ///
@@ -282,9 +284,10 @@ workflow SPARSE {
     .set { indexed_bams }
     
     IMPUTATION(
+        BEDTOOLS_MAKEWINDOWS.out.bed,
         intervals_for_imputation,
         indexed_bams,
-        file(params.positions, checkIfExists: true),
+        known_variants,
         reference
     )
     // //

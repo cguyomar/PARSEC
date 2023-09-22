@@ -5,22 +5,38 @@
 include { SAMTOOLS_VIEW_ON_INTERVAL } from '../../modules/local/samtools_view_on_interval'
 include { SAMTOOLS_INDEX } from '../../modules/nf-core/samtools/index/main'
 include { STITCH } from '../../modules/nf-core/stitch/main'
+include { VCF_TO_TAB } from '../../modules/local/vcf_to_tab'
 
 workflow IMPUTATION {
     take:
-    intervals // file
-    bams // [meta, [bams], bai]
-    positions // file (vcf or tab?)
-    genome // [meta, fasta, fai]
+    calling_intervals       // file with all intervals together
+    imputation_intervals    // channel with one interval per emission
+    bams                    // [meta, [bams], bai]
+    known_sites             // path (vcf)
+    genome                  // [meta, fasta, fai]
     
 
     main:
 
-    //vcf2tab
+    //Convert vcf to tab and split by chunk
+    calling_intervals.collect().view()
+    VCF_TO_TAB(known_sites, calling_intervals)
+
+    VCF_TO_TAB.out.positions
+    .flatten()
+    .map{ it ->
+        println(it)
+        [
+            ['id': it.simpleName],
+            it
+        ]
+    }
+    .set { positions }
+    // meta, positions
 
     // Combine bams and intervals
     bams_with_intervals = bams
-        .combine(intervals)
+        .combine(imputation_intervals)
         .map { meta, bam, bai, meta_interval, interval -> 
             [ 
                 [
@@ -81,16 +97,29 @@ workflow IMPUTATION {
 
     // // // Stitch needs 3 inputs :
     // // // stitch
-    def stitch_input = [
+    positions.map { meta, pos -> 
         [ 
-            id: "positions " ],
-            positions,
+            meta,
+            pos,
             [],
             [],
-            "1",  //chr
+            pos.readLines()[0].split('\t')?.first(),  //chr
             "4", //npop
             "100"  // ngen
         ]
+    }
+    .set { stitch_input }
+
+
+    // stitch_input = [
+    //     [ id: "positions " ],
+    //     positions,
+    //     [],
+    //     [],
+    //     "1",  //chr
+    //     "4", //npop
+    //     "100"  // ngen
+    //     ]
     // // bams
     // // def bams = [
     // //     [ id:"test_reads" ],
