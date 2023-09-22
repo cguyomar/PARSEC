@@ -134,7 +134,7 @@ workflow SPARSE {
             lines_slopped = sloppedBed.readLines()
             chunk_ids = []
             res = []
-            def nb_interval = 0
+            def nb_interval = 1
             for (int i = 0; i < lines.size(); i++) {
                 def line = lines[i]
                 def line_slopped = lines_slopped[i]
