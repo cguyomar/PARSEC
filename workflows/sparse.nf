@@ -36,7 +36,7 @@ ch_multiqc_custom_methods_description = params.multiqc_methods_description ? fil
 // SUBWORKFLOW: Consisting of a mix of local and nf-core/modules
 //
 include { INPUT_CHECK } from '../subworkflows/local/input_check'
-include { SAMTOOLS_MERGE_ON_INTERVAL } from '../modules/local/samtools_merge_on_interval'
+include { IMPUTATION } from '../subworkflows/local/imputation'
 
 
 /*
@@ -57,6 +57,12 @@ include { BCFTOOLS_CONCAT } from '../modules/nf-core/bcftools/concat/main'
 include { BCFTOOLS_SORT } from '../modules/nf-core/bcftools/sort/main'
 include { MULTIQC                     } from '../modules/nf-core/multiqc/main'
 include { CUSTOM_DUMPSOFTWAREVERSIONS } from '../modules/nf-core/custom/dumpsoftwareversions/main'
+
+/// 
+/// MODULE: Local modules
+///
+include { SAMTOOLS_MERGE_ON_INTERVAL } from '../modules/local/samtools_merge_on_interval'
+
 
 /*
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -99,13 +105,6 @@ workflow SPARSE {
         bam_channel
     )
 
-    // // Mix together bam and bai files
-    // SAMTOOLS_INDEX.out.bai
-    //     .concat(bam_channel)
-    //     .groupTuple()
-    //     .set { bam_channel_indexed }
-    // // [meta, [bam,bai]]
-
     ///
     /// MODULE: Run MakeWindows
     ///
@@ -137,14 +136,14 @@ workflow SPARSE {
             for (int i = 0; i < lines.size(); i++) {
                 def line = lines[i]
                 def line_slopped = lines_slopped[i]
-                    chunk_id = "chunk_" + nb_interval.toString()
-                    chunk_ids.add(chunk_id)
-                    nb_interval += 1
+                chunk_id = "chunk_" + nb_interval.toString()
+                chunk_ids.add(chunk_id)
+                nb_interval += 1
 
                 res.add([chunk_id,line,line_slopped])
             }
             res
-        }
+        }   
         .multiMap { it ->
             calling: [ it[0], it[1] ]
             imputation: [ it[0], it[2] ]
@@ -230,6 +229,8 @@ workflow SPARSE {
     .set { index_bam_grouped_by_interval }
     // [meta, [bam], [bai], intervals]
     
+    // index_bam_grouped_by_interval.view()
+
     ///
     /// MODULE: Run Samtools merge
     ///
@@ -239,9 +240,9 @@ workflow SPARSE {
         [[],[]]
         )
 
-    ///
-    /// MODULE: Run Mpileup
-    ///
+    // ///
+    // /// MODULE: Run Mpileup
+    // ///
     BCFTOOLS_MPILEUP(
         SAMTOOLS_MERGE_ON_INTERVAL.out.bam,
         params.fasta,
@@ -271,6 +272,21 @@ workflow SPARSE {
     BCFTOOLS_SORT(BCFTOOLS_CONCAT.out.vcf)
 
 
+    def reference = [
+        [ id:"test_reference" ],
+        file(params.fasta, checkIfExists: true),
+        file(params.fai, checkIfExists: true),
+    ]
+
+    bam_channel.combine(SAMTOOLS_INDEX.out.bai, by: 0)
+    .set { indexed_bams }
+    
+    IMPUTATION(
+        intervals_for_imputation,
+        indexed_bams,
+        file(params.positions, checkIfExists: true),
+        reference
+    )
     // //
     // // MODULE: Run BamQC
     // //

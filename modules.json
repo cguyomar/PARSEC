@@ -59,6 +59,11 @@
                         "branch": "master",
                         "git_sha": "0460d316170f75f323111b4a2c0a2989f0c32013",
                         "installed_by": ["modules"]
+                    },
+                    "stitch": {
+                        "branch": "master",
+                        "git_sha": "f732bfc9c8a90fbbe72e98ae29fde0dd146acb03",
+                        "installed_by": ["modules"]
                     }
                 }
             }
