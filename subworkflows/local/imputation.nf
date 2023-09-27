@@ -1,5 +1,5 @@
 //
-// Check input samplesheet and get read channels
+// Split bams and run Stitch
 //
 
 include { SAMTOOLS_VIEW_ON_INTERVAL } from '../../modules/local/samtools_view_on_interval'
@@ -11,7 +11,7 @@ workflow IMPUTATION {
     take:
     calling_intervals       // file with all intervals together
     imputation_intervals    // channel with one interval per emission
-    bams                    // [meta, [bams], bai]
+    bams                    // [meta, [bams], [bais]]
     known_sites             // path (vcf)
     genome                  // [meta, fasta, fai]
     
