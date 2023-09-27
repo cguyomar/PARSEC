@@ -188,97 +188,12 @@ workflow SPARSE {
     .set { intervals_for_calling }
     // meta, bed
 
-
-    CALLING(
-        intervals_for_calling,
-        indexed_bams
-    )
-
-    // bam_channel_splitted = bam_channel
-    //     .combine(intervals_for_calling)
-    //     .map { meta, bam, meta_interval, interval -> 
-    //         [ 
-    //             meta_interval,
-    //             bam,
-    //             interval
-    //         ]
-    //     }
-    // // [meta, bam, interval]
-
-    // // // Group by bam intervals
-    // bam_groupped_by_interval = bam_channel_splitted
-    //     .groupTuple(by: [0,2])
-    //     .map { meta, bamlist, interval ->
-    //         [meta, bamlist, interval]
-    //     }
-    //     // .view()
-    // // [meta, [bams], interval]
-
-    // // Same for bai files
-    // SAMTOOLS_INDEX.out.bai
-    //     .combine(intervals_for_calling)
-    //     .map { meta, bai, chunk_id, interval -> 
-    //         [ 
-    //             [ id:chunk_id.id ],
-    //             bai,
-    //             interval
-    //         ]
-    //     }
-    //     .groupTuple(by: [0,2])
-    //     .map { meta, bailist, interval ->
-    //         [meta, bailist, interval]
-    //     }.set { bai_grouped_by_interval }
-
-    // bai_grouped_by_interval.concat(bam_groupped_by_interval)
-    // .groupTuple(by: [0,2])
-    // .map {
-    //     meta, files, intervals ->
-    //     [meta, files[1], files[0],intervals]
-    // }
-    // .set { index_bam_grouped_by_interval }
-    // // [meta, [bam], [bai], intervals]
-    
-    // // index_bam_grouped_by_interval.view()
-
-    // ///
-    // /// MODULE: Run Samtools merge
-    // ///
-    // SAMTOOLS_MERGE_ON_INTERVAL(
-    //     index_bam_grouped_by_interval,    
-    //     [[],[]],
-    //     [[],[]]
-    //     )
-
-    // // ///
-    // // /// MODULE: Run Mpileup
-    // // ///
-    // BCFTOOLS_MPILEUP(
-    //     SAMTOOLS_MERGE_ON_INTERVAL.out.bam,
-    //     params.fasta,
-    //     []
-    //     )
-
-    // vcf_by_interval = BCFTOOLS_MPILEUP.out.vcf
-    //     .join(BCFTOOLS_MPILEUP.out.tbi)
-    //     .map { it ->
-    //         [
-    //             [id: "all_samples"],
-    //             it[1],
-    //             it[2]
-    //         ]
-    //     }
-    //     .groupTuple()
-    
-    // ///
-    // /// MODULE: Run Bcftools concat
-    // ///
-    // BCFTOOLS_CONCAT(vcf_by_interval)
-
-
-    // ///
-    // /// MODULE: Run Bcftools sort
-    // ///
-    // BCFTOOLS_SORT(BCFTOOLS_CONCAT.out.vcf)
+    if ( !params.known_variants )  {
+        CALLING(
+            intervals_for_calling,
+            indexed_bams
+        )
+    }
 
 
     def reference = [
@@ -286,9 +201,7 @@ workflow SPARSE {
         file(params.fasta, checkIfExists: true),
         file(params.fai, checkIfExists: true),
     ]
-
-
-    
+  
     IMPUTATION(
         BEDTOOLS_MAKEWINDOWS.out.bed,
         intervals_for_imputation,

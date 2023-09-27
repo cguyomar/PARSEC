@@ -29,7 +29,6 @@ workflow CALLING {
 
     // Group bams of the same interval
     bam_groupped_by_interval = bams_with_intervals
-    .view()
         .groupTuple(by: [0,3])
         .map { meta, bamlist, bailist, interval ->
             [meta, bamlist, bailist, interval]
@@ -69,7 +68,6 @@ workflow CALLING {
     ///
     /// MODULE: Run Bcftools concat
     ///
-    vcf_by_interval.view()
     BCFTOOLS_CONCAT(vcf_by_interval)
 
 
