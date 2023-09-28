@@ -23,20 +23,11 @@ process VCF_TO_TAB {
     awk 'BEGIN {OFS="\t"} !/^#/ && \$4 !~ /,/ && \$5 !~ /,/ {print \$1, \$2, \$2, \$4, \$5}' ${vcf}  \
         > variant_sites.bed
 
-    # split bed to make thinks faster
-    for chr in `cut -f 1 ${intervals} | sort | uniq`;
-    do
-        echo \$chr
-        grep -w \$chr variant_sites.bed > \$chr.bed
-    done
-
     while read line 
-    do 
-        chunk_id=\$(echo \$line | cut -d " " -f4)
-        chr=\$(echo \$line | cut -d " " -f1)
+        do chunk_id=\$(echo \$line | cut -d " " -f4)
         echo chunk\$chunk_id
         echo \$line | sed -e 's/ /\t/g' > int.bed
-        bedtools intersect -sorted -a \$chr.bed -b int.bed | awk 'BEGIN {OFS="\t"} {print \$1,\$2,\$4,\$5}' > res/chunk\$chunk_id.tsv
+        bedtools intersect -sorted -a variant_sites.bed -b int.bed | awk 'BEGIN {OFS="\t"} {print \$1,\$2,\$4,\$5}' > res/chunk_\$chunk_id.2.tsv
     done < ${intervals}
 
     """
