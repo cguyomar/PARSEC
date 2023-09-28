@@ -12,28 +12,32 @@ process VCF_TO_TAB {
     tuple val(meta), path(intervals)
    
     output:
-    path  "chunk_*.tsv", emit: positions
+    path  "res/chunk_*.tsv", emit: positions
 
     when:
     task.ext.when == null || task.ext.when
 
     script:
     """
+    mkdir res
+    awk 'BEGIN {OFS="\t"} !/^#/ && \$4 !~ /,/ && \$5 !~ /,/ {print \$1, \$2, \$2, \$4, \$5}' ${vcf}  \
+        > variant_sites.bed
 
-    awk 'BEGIN {OFS="\t"} !/^#/ && \$4 !~ /,/ && \$5 !~ /,/ {print \$1, \$2, \$4, \$5}' ${vcf}  \
-        > variant_sites.tsv
+    # split bed to make thinks faster
+    for chr in `cut -f 1 ${intervals} | sort | uniq`;
+    do
+        echo \$chr
+        grep -w \$chr variant_sites.bed > \$chr.bed
+    done
 
-    awk -F'\t' 'NR==FNR {a[\$1,\$2,\$3]=\$4; next} 
-    {
-        for (i in a) {
-            split(i, arr, SUBSEP);
+    while read line 
+    do 
+        chunk_id=\$(echo \$line | cut -d " " -f4)
+        chr=\$(echo \$line | cut -d " " -f1)
+        echo chunk\$chunk_id
+        echo \$line | sed -e 's/ /\t/g' > int.bed
+        bedtools intersect -sorted -a \$chr.bed -b int.bed | awk 'BEGIN {OFS="\t"} {print \$1,\$2,\$4,\$5}' > res/chunk\$chunk_id.tsv
+    done < ${intervals}
 
-            if (\$2 >= arr[2] && \$2 <= arr[3]) {
-                output_file = "chunk" a[i] ".tsv";
-                print \$0 > output_file;
-                break;
-            }
-        }
-    }' genome_intervals.bed variant_sites.tsv
     """
 }
