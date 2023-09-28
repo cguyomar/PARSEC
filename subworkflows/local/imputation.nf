@@ -6,11 +6,12 @@ include { SAMTOOLS_VIEW_ON_INTERVAL } from '../../modules/local/samtools_view_on
 include { SAMTOOLS_INDEX } from '../../modules/nf-core/samtools/index/main'
 include { STITCH } from '../../modules/nf-core/stitch/main'
 include { VCF_TO_TAB } from '../../modules/local/vcf_to_tab'
+include { SAMTOOLS_SPLIT_BAM } from "../../modules/local/samtools_split_bam"
 
 workflow IMPUTATION {
     take:
     calling_intervals       // file with all intervals together
-    imputation_intervals    // channel with one interval per emission
+    imputation_intervals    // file with all intervals together
     bams                    // [meta, [bams], [bais]]
     known_sites             // path (vcf)
     genome                  // [meta, fasta, fai]
@@ -18,8 +19,57 @@ workflow IMPUTATION {
 
     main:
 
+
+    SAMTOOLS_SPLIT_BAM(
+        bams,
+        imputation_intervals,
+        [[],[]]
+    )
+
+    SAMTOOLS_SPLIT_BAM.out.indexed_bams
+        .flatMap { meta, bams, bais -> 
+            res = []
+            bams.eachWithIndex { bam, index ->
+                filename = bam.getName()
+                chunk_id = "chunk" + bam.simpleName
+                bam_name = filename.split("\\.")
+                bam_name = bam_name[1..-2].join(".")
+                // meta.bam_id = meta.id
+                // meta.chunk_id = chunk_id
+                // meta.id = bam_name + ":" + chunk_id
+                meta = [ id: chunk_id ]
+                res.add([ meta, bam, bais[index] ] )
+            }
+            res
+        }
+        .set { indexed_bams_per_interval }
+    // meta, bam, bai  
+
+    // Write to file a list of bamFiles per interval
+    indexed_bams_per_interval
+        .collectFile { meta, bam, bai ->
+            fname = bam[-1] as String
+            [ "${meta.id}.bamList.txt", fname + '\n' ]
+        }
+        .map { file -> [[id:file.simpleName], file ] } // We re-add the same meta to join later
+        .set { bamList }
+
+    indexed_bams_per_interval
+        .groupTuple( by: [0] )
+        .set { indexed_bams_per_interval }
+
+    // Join with the list of bam files per chunk
+    indexed_bams_per_interval
+        .join(bamList)
+        .set { indexed_bams_per_interval } 
+    // meta, [bams], [bais], bamlist
+
+
+
+    // What we want : meta, [bams], [bais], bamlist
+
     //Convert vcf to tab and split by chunk
-    calling_intervals.collect().view()
+    calling_intervals.collect()
     VCF_TO_TAB(known_sites, calling_intervals)
 
     VCF_TO_TAB.out.positions
@@ -34,69 +84,8 @@ workflow IMPUTATION {
     .set { positions }
     // meta, positions
 
-    // Combine bams and intervals
-    bams_with_intervals = bams
-        .combine(imputation_intervals)
-        .map { meta, bam, bai, meta_interval, interval -> 
-            [ 
-                [
-                    bam_id: meta.id,
-                    chunk_id: meta_interval.id,
-                    id: meta.id + "_" + meta_interval.id // id specific to bam+chunk
-                ], 
-                bam,
-                bai,
-                interval
-            ]
-        }
-    // [meta, bam, bai, interval]
 
-    // Subsample bams on interval
-    SAMTOOLS_VIEW_ON_INTERVAL(
-        bams_with_intervals,
-        [[],[]],
-        []
-    )
-
-    // Group bams and bais
-    SAMTOOLS_VIEW_ON_INTERVAL.out.bam
-        .combine(SAMTOOLS_VIEW_ON_INTERVAL.out.bai, by: 0)
-        .set { splitted_bams }
-    // meta, bam, bai
-
-    // Write to file a list of bamFiles per interval
-    splitted_bams
-        .collectFile { meta, bam, bai ->
-            fname = bam[-1] as String
-            [ "${meta.chunk_id}.bamList.txt", fname + '\n' ]
-        }
-        .map { file -> [[id:file.simpleName], file ] } // We re-add the same meta to join later
-        .set { bamList }
-
-
-
-    // Group together bams of the same chunk
-    splitted_bams
-        .map { meta, bam, bai -> 
-            meta = [id: meta.chunk_id] // We drop bam_id
-            [ meta, bam, bai ]
-            }
-        .groupTuple( by: [0] )
-        .set { splitted_bams }
-
-
-    // Join with the list of bam files per chunk
-    splitted_bams
-        // .groupTuple()
-        // .view()
-        .join(bamList)
-        .set { splitted_bams } 
-    // meta, [bams], [bais], bamlist
-
-    
-
-    // // // Stitch needs 3 inputs :
-    // // // stitch
+    // Prepare stitch input
     positions.map { meta, pos -> 
         [ 
             meta,
@@ -110,33 +99,9 @@ workflow IMPUTATION {
     }
     .set { stitch_input }
 
-
-    // stitch_input = [
-    //     [ id: "positions " ],
-    //     positions,
-    //     [],
-    //     [],
-    //     "1",  //chr
-    //     "4", //npop
-    //     "100"  // ngen
-    //     ]
-    // // bams
-    // // def bams = [
-    // //     [ id:"test_reads" ],
-    // //     bams_val,
-    // //     bais_val 
-    // //     ]
-
-    // // ref genome
-    // def reference = [
-    //     [ id:"test_reference" ],
-    //     genome[0],
-    //     genome[1]
-    // ]
-
     STITCH(
         stitch_input,
-        splitted_bams,
+        indexed_bams_per_interval,
         genome,
         []
     )

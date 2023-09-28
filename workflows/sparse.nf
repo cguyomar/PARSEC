@@ -204,7 +204,7 @@ workflow SPARSE {
   
     IMPUTATION(
         BEDTOOLS_MAKEWINDOWS.out.bed,
-        intervals_for_imputation,
+        BEDTOOLS_SLOP.out.bed,
         indexed_bams,
         known_variants,
         reference
