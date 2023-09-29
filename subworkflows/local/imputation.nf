@@ -85,10 +85,12 @@ workflow IMPUTATION {
                 it
             ]
         }
-        .view()
         .set { positions }
         // meta, positions
 
+    positions.filter { meta, positions -> 
+        positions.countLines() > 0
+    } .set { positions }
 
     // Prepare stitch input
     positions.map { meta, pos -> 
