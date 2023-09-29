@@ -106,9 +106,17 @@ workflow IMPUTATION {
     }
     .set { stitch_input }
 
+    stitch_input
+        .join(indexed_bams_per_interval)
+        .multiMap { meta, pos,  arg1, arg2, chr, npop, ngen, bam, bai, bamlist -> 
+            input1: [meta, pos, arg1, arg2, chr, npop, ngen]
+            input2: [meta, bam, bai, bamlist]
+        }
+        .set { stitch_input }
+
     STITCH(
-        stitch_input,
-        indexed_bams_per_interval,
+        stitch_input.input1,
+        stitch_input.input2,
         genome,
         []
     )
