@@ -203,7 +203,7 @@ workflow SPARSE {
     ]
   
     IMPUTATION(
-        BEDTOOLS_MAKEWINDOWS.out.bed,
+        BEDTOOLS_MAKEWINDOWS.out.bed.splitText(),
         BEDTOOLS_SLOP.out.bed,
         indexed_bams,
         known_variants,

@@ -6,6 +6,7 @@ include { SAMTOOLS_VIEW_ON_INTERVAL } from '../../modules/local/samtools_view_on
 include { SAMTOOLS_INDEX } from '../../modules/nf-core/samtools/index/main'
 include { STITCH } from '../../modules/nf-core/stitch/main'
 include { VCF_TO_TAB } from '../../modules/local/vcf_to_tab'
+include { SPLIT_POSITIONS } from '../../modules/local/split_positions'
 include { SAMTOOLS_SPLIT_BAM } from "../../modules/local/samtools_split_bam"
 
 workflow IMPUTATION {
@@ -69,42 +70,47 @@ workflow IMPUTATION {
     // What we want : meta, [bams], [bais], bamlist
 
     //Convert vcf to tab and split by chunk
-    calling_intervals.collect()
-    VCF_TO_TAB(known_sites, calling_intervals)
 
-    VCF_TO_TAB.out.positions
-    .flatten()
-    .map{ it ->
-        println(it)
-        [
-            ['id': it.simpleName],
-            it
-        ]
-    }
-    .set { positions }
-    // meta, positions
+    // calling_intervals.view()
+    VCF_TO_TAB( known_sites )
+
+    calling_intervals.combine( VCF_TO_TAB.out.bed )
+        .set { sites_to_split }
+    SPLIT_POSITIONS( sites_to_split )
+
+    // VCF_TO_TAB.out.positions
+    // .flatten()
+    // .map{ it ->
+    //     println(it)
+    //     [
+    //         ['id': it.simpleName],
+    //         it
+    //     ]
+    // }
+    // .set { positions }
+    // // meta, positions
 
 
-    // Prepare stitch input
-    positions.map { meta, pos -> 
-        [ 
-            meta,
-            pos,
-            [],
-            [],
-            pos.readLines()[0].split('\t')?.first(),  //chr
-            "4", //npop
-            "100"  // ngen
-        ]
-    }
-    .set { stitch_input }
+    // // Prepare stitch input
+    // positions.map { meta, pos -> 
+    //     [ 
+    //         meta,
+    //         pos,
+    //         [],
+    //         [],
+    //         pos.readLines()[0].split('\t')?.first(),  //chr
+    //         "4", //npop
+    //         "100"  // ngen
+    //     ]
+    // }
+    // .set { stitch_input }
 
-    STITCH(
-        stitch_input,
-        indexed_bams_per_interval,
-        genome,
-        []
-    )
+    // STITCH(
+    //     stitch_input,
+    //     indexed_bams_per_interval,
+    //     genome,
+    //     []
+    // )
 
 
     // emit:
