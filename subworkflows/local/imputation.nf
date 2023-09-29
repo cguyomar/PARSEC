@@ -78,39 +78,38 @@ workflow IMPUTATION {
         .set { sites_to_split }
     SPLIT_POSITIONS( sites_to_split )
 
-    // VCF_TO_TAB.out.positions
-    // .flatten()
-    // .map{ it ->
-    //     println(it)
-    //     [
-    //         ['id': it.simpleName],
-    //         it
-    //     ]
-    // }
-    // .set { positions }
-    // // meta, positions
+    SPLIT_POSITIONS.out.positions
+        .map{ meta, it ->
+            [
+                ['id': it.simpleName],
+                it
+            ]
+        }
+        .view()
+        .set { positions }
+        // meta, positions
 
 
-    // // Prepare stitch input
-    // positions.map { meta, pos -> 
-    //     [ 
-    //         meta,
-    //         pos,
-    //         [],
-    //         [],
-    //         pos.readLines()[0].split('\t')?.first(),  //chr
-    //         "4", //npop
-    //         "100"  // ngen
-    //     ]
-    // }
-    // .set { stitch_input }
+    // Prepare stitch input
+    positions.map { meta, pos -> 
+        [ 
+            meta,
+            pos,
+            [],
+            [],
+            pos.readLines()[0].split('\t')?.first(),  //chr
+            "4", //npop
+            "100"  // ngen
+        ]
+    }
+    .set { stitch_input }
 
-    // STITCH(
-    //     stitch_input,
-    //     indexed_bams_per_interval,
-    //     genome,
-    //     []
-    // )
+    STITCH(
+        stitch_input,
+        indexed_bams_per_interval,
+        genome,
+        []
+    )
 
 
     // emit:
