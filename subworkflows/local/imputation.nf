@@ -100,8 +100,8 @@ workflow IMPUTATION {
             [],
             [],
             pos.readLines()[0].split('\t')?.first(),  //chr
-            "4", //npop
-            "100"  // ngen
+            params.npop, //npop
+            params.ngen  // ngen
         ]
     }
     .set { stitch_input }
