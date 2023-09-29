@@ -27,7 +27,7 @@ process VCF_TO_TAB {
         do chunk_id=\$(echo \$line | cut -d " " -f4)
         echo chunk\$chunk_id
         echo \$line | sed -e 's/ /\t/g' > int.bed
-        bedtools intersect -sorted -a variant_sites.bed -b int.bed | awk 'BEGIN {OFS="\t"} {print \$1,\$2,\$4,\$5}' > res/chunk_\$chunk_id.2.tsv
+        bedtools intersect -a variant_sites.bed -b int.bed | awk 'BEGIN {OFS="\t"} {print \$1,\$2,\$4,\$5}' > res/chunk_\$chunk_id.tsv
     done < ${intervals}
 
     """
