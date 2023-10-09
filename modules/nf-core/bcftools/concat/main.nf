@@ -8,7 +8,7 @@ process BCFTOOLS_CONCAT {
         'biocontainers/bcftools:1.17--haef29d1_0' }"
 
     input:
-    tuple val(meta), path(vcfs), path(tbi)
+    tuple val(meta), path(vcfs, stageAs: "*.vcf.gz"), path(tbi, stageAs: "*.vcf.gz.tbi")
 
     output:
     tuple val(meta), path("*.gz"), emit: vcf

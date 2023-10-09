@@ -5,9 +5,11 @@
 include { SAMTOOLS_VIEW_ON_INTERVAL } from '../../modules/local/samtools_view_on_interval'
 include { SAMTOOLS_INDEX } from '../../modules/nf-core/samtools/index/main'
 include { STITCH } from '../../modules/nf-core/stitch/main'
+include { BCFTOOLS_CONCAT } from '../../modules/nf-core/bcftools/concat/main'
 include { VCF_TO_TAB } from '../../modules/local/vcf_to_tab'
 include { SPLIT_POSITIONS } from '../../modules/local/split_positions'
 include { SAMTOOLS_SPLIT_BAM } from "../../modules/local/samtools_split_bam"
+include { TABIX_TABIX } from '../../modules/nf-core/tabix/tabix/main'             
 
 workflow IMPUTATION {
     take:
@@ -48,7 +50,7 @@ workflow IMPUTATION {
 
     // Write to file a list of bamFiles per interval
     indexed_bams_per_interval
-        .collectFile { meta, bam, bai ->
+        .collectFile(sort: true) { meta, bam, bai ->
             fname = bam[-1] as String
             [ "${meta.id}.bamList.txt", fname + '\n' ]
         }
@@ -121,8 +123,22 @@ workflow IMPUTATION {
         []
     )
 
+    // MODULE : BGZIP TABIX
+    TABIX_TABIX(STITCH.out.vcf)
+
+    TABIX_TABIX.out.tbi
+        .join(STITCH.out.vcf)
+        .map{ it -> [ [id: "imputed"], it[2], it[1] ] }
+        .groupTuple() 
+        .view()
+        .set { stitch_vcf_indexed }
+        // meta, [vcf.gz], [tbi]
+        
+         
+    // MODULE : BCFTOOLS CONCAT
+    BCFTOOLS_CONCAT( stitch_vcf_indexed.collect() )
 
     // emit:
-    // bam = SAMTOOLS_VIEW_ON_INTERVAL.out.bam  // channel: [ val(meta), [ bam ] ] ??
+    bam = BCFTOOLS_CONCAT.out.vcf  // channel: [ val(meta), vcf ] ??
     // versions = SAMTOOLS_VIEW_ON_INTERVAL.out. // channel: [ versions.yml ]
 }
