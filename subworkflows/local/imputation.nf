@@ -32,7 +32,7 @@ workflow IMPUTATION {
             res = []
             bams.eachWithIndex { bam, index ->
                 filename = bam.getName()
-                chunk_id = "chunk" + bam.simpleName
+                chunk_id = "chunk_" + bam.simpleName
                 bam_name = filename.split("\\.")
                 bam_name = bam_name[1..-2].join(".")
                 // meta.bam_id = meta.id
@@ -89,7 +89,7 @@ workflow IMPUTATION {
         // meta, positions
 
     positions.filter { meta, positions -> 
-        positions.countLines() > 0
+        positions.countLines() > 10
     } .set { positions }
 
     // Prepare stitch input
