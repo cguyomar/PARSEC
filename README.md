@@ -1,6 +1,9 @@
 ## Introduction
 
-**nf/sparse** is a bioinformatics pipeline that ...
+**PARSEC** (imPutAtion for spaRSE sequenCing) is a bioinformatics pipeline designed to genotype large populations using low coverage sequencing data.
+It relies on `bcftools mpileup` to detect SNP sites and `stitch` to impute genotypes
+
+**The pipeline is still in early development**
 
 <!-- TODO nf-core:
    Complete this sentence with a 2-3 sentence summary of what types of data the pipeline ingests, a brief overview of the
@@ -12,8 +15,9 @@
      workflows use the "tube map" design for that. See https://nf-co.re/docs/contributing/design_guidelines#examples for examples.   -->
 <!-- TODO nf-core: Fill in short bullet-pointed list of the default steps in the pipeline -->
 
-1. Read QC ([`FastQC`](https://www.bioinformatics.babraham.ac.uk/projects/fastqc/))
+<!--1. Read QC ([`FastQC`](https://www.bioinformatics.babraham.ac.uk/projects/fastqc/))
 2. Present QC for raw reads ([`MultiQC`](http://multiqc.info/))
+-->
 
 ## Usage
 
