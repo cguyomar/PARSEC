@@ -5,8 +5,7 @@ It relies on `bcftools mpileup` to detect SNP sites and `stitch` to impute genot
 
 **The pipeline is still in early development**
 
-<!-- TODO nf-core: Include a figure that guides the user through the major workflow steps. Many nf-core
-     workflows use the "tube map" design for that. See https://nf-co.re/docs/contributing/design_guidelines#examples for examples.   -->
+![metro map](docs/images/PARSEC_metro_map.png)
 
 1. Index bams ([`SAMtools`](https://sourceforge.net/projects/samtools/files/samtools/))
 2. Prepare fixed size genomic chunks ([`bedtools`](https://github.com/arq5x/bedtools2/))
