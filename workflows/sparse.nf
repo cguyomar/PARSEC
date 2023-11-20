@@ -75,6 +75,25 @@ workflow SPARSE {
 
     ch_versions = Channel.empty()
 
+
+    // Validate input parameters
+    if (params.imputation_tool != "stitch" & params.imputation_tool != "glimpse") {
+        exit 1, 'Imputation tool should be one of stich, glimpse'
+    }
+
+    if (params.imputation_tool == "glimpse" & !params.ref_panel) {
+        exit 1, 'Imputation tool Glimpse requires a reference panel supplied with --ref_pannel'
+    } else if (params.imputation_tool=="glimpse") {
+        reference_panel = 
+            [
+                [ id:"reference_panel" ],
+                file(params.ref_panel, checkIfExists: true),
+            ]
+        
+    } else {
+        reference_panel = null
+    }
+
     // //
     // // SUBWORKFLOW: Read in samplesheet, validate and stage input files
     // //
