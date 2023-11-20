@@ -96,8 +96,6 @@ workflow SPARSE {
         ]
     }
 
-    known_variants = Channel.fromPath(params.known_variants, checkIfExists: true)
-
     ///
     /// MODULE: Run Samtools index
     ///
@@ -152,62 +150,52 @@ workflow SPARSE {
             imputation: [ it[0], it[2] ]
         }
         .set { intervals }
+        
     
     /// Read interval ids to update the meta map
     /// [interval, chunk_id]
     intervals.calling
         .map {
-            it -> [[ id:it[0]],it]
+            it -> [[ id:it[0]],it[1]]
         }
         .set { intervals_for_calling }
 
     intervals.imputation
         .map {
-            it -> [[ id:it[0]],it]
+            it -> [[ id:it[0]],it[1]]
         }
         .set { intervals_for_imputation }
 
 
-    // Write intervals to file
-    intervals.imputation
-    .collectFile() { item ->
-        [ "${item[0]}.imputation.bed",item[1] + '\n' ]
-    }
-    .map {
-        it -> [[ id:it.baseName.replaceFirst(/(chunk_\d+)\..*/, '$1') ],it]
-        }
-    .set { intervals_for_imputation }
-    
-    intervals.calling
-    .collectFile() { item ->
-        [ "${item[0]}.calling.bed",item[1] + '\n']
-    }
-    .map {
-        it -> [[ id:it.baseName.replaceFirst(/(chunk_\d+)\..*/, '$1') ],it]
-    }
-    .set { intervals_for_calling }
-    // meta, bed
-
-    if ( !params.known_variants )  {
+       if ( !params.sparse_variants )  {
         CALLING(
-            intervals_for_calling,
+            intervals_for_calling_as_bed,
             indexed_bams
         )
+        CALLING.out.vcf
+            .set { sparse_variants }
+    } else {
+        sparse_variants = [
+            [ id:"sparse_variants" ],
+            file(params.sparse_variants)
+        ]
     }
 
-
-    def reference = [
+    def reference_genome = [
         [ id:"test_reference" ],
         file(params.fasta, checkIfExists: true),
         file(params.fai, checkIfExists: true),
     ]
+
+    // reference_genome[0].view()
   
     IMPUTATION(
-        BEDTOOLS_MAKEWINDOWS.out.bed.splitText(),
-        BEDTOOLS_SLOP.out.bed,
+        intervals_for_calling,
+        intervals_for_imputation,
         indexed_bams,
-        known_variants,
-        reference
+        Channel.fromList([sparse_variants]),
+        Channel.fromList([reference_genome]),
+        Channel.fromList([reference_panel])
     )
     // //
     // // MODULE: Run BamQC

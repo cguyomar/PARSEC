@@ -8,7 +8,7 @@ process VCF_TO_TAB {
         'biocontainers/bedtools:2.30.0--h7d7f7ad_1' }"
 
     input:
-    path(vcf)
+    tuple val(meta), path(vcf)
    
     output:
     path  "variant_sites.bed", emit: bed

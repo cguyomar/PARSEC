@@ -8,8 +8,7 @@ process SAMTOOLS_SPLIT_BAM {
         'biocontainers/samtools:1.17--h00cdaf9_0' }"
 
     input:
-    tuple val(meta_bam), path(input), path(index)
-    tuple val(meta_intervals), path(intervals)
+    tuple val(meta_bam), path(input), path(index), val(meta_intervals), path(intervals)
     tuple val(meta_fasta), path(fasta)
 
     output:

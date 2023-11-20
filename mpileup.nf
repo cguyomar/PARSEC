@@ -2,20 +2,22 @@
 
 nextflow.enable.dsl = 2
 
-include { BCFTOOLS_MPILEUP } from './modules/nf-core/bcftools/mpileup/main'
+include { BEDTOOLS_SLOP } from '../modules/nf-core/bedtools/slop/main'
 
 
 workflow test_bcftools_mpileup_intervals {
 
     input = [
         [ id:'test' ], // meta map
-        [ file("test_data/17M29921492.md.bam", checkIfExists: true), file("test_data/17M29921497.md.bam", checkIfExists: true) ],
-        [file("test_data/test_interval.bed", checkIfExists: true)]
+        [ file("../test_data/tmp1.bed", checkIfExists: true), file("test_data/tmp2.bed", checkIfExists: true) ]
     ]
-    fasta = file("test_data/sus_scrofa.fa", checkIfExists: true)
-    save_mpileup = false
+    fasta = file("../test_data/sizes.genome", checkIfExists: true)
 
-    BCFTOOLS_MPILEUP ( input, fasta, save_mpileup )
+    bamlist = Channel.fromPath( "../test_data/*.md.bam" )
+    .map { it[-1] as String } // get only filename
+    .collectFile( name: "bamlist.txt", newLine: true, sort: true )
+
+
 }
 
 workflow {
