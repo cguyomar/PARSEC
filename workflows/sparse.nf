@@ -77,8 +77,11 @@ workflow SPARSE {
 
 
     // Validate input parameters
-    if (params.imputation_tool != "stitch" & params.imputation_tool != "glimpse") {
-        exit 1, 'Imputation tool should be one of stich, glimpse'
+    if (params.imputation_tool != "stitch" & 
+        params.imputation_tool != "glimpse" &
+        params.imputation_tool != "beagle4"
+        ) {
+        exit 1, 'Imputation tool should be one of stich, glimpse, ebagle4'
     }
 
     if (params.imputation_tool == "glimpse" & !params.ref_panel) {
@@ -172,12 +175,19 @@ workflow SPARSE {
         
     
     /// Read interval ids to update the meta map
-    /// [interval, chunk_id]
+    /// [ chunk_id, interval ]
     intervals.calling
         .map {
             it -> [[ id:it[0]],it[1]]
         }
         .set { intervals_for_calling }
+        // [meta, interval]
+
+    intervals_for_calling.collectFile(sort: false) { it -> 
+        [ it[0].id + ".bed", it[1] ]
+    }.merge(intervals_for_calling) // bed, meta, interval
+    .map { it -> [ it[1], it[0] ] } 
+    .set { intervals_for_calling_as_bed } // meta, bed
 
     intervals.imputation
         .map {
