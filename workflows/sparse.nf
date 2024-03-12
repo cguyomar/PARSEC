@@ -55,11 +55,14 @@ include { BEDTOOLS_SLOP } from '../modules/nf-core/bedtools/slop/main'
 include { SAMTOOLS_INDEX } from '../modules/nf-core/samtools/index/main'
 include { MULTIQC                     } from '../modules/nf-core/multiqc/main'
 include { CUSTOM_DUMPSOFTWAREVERSIONS } from '../modules/nf-core/custom/dumpsoftwareversions/main'
+include { SAMTOOLS_FAIDX } from '../modules/nf-core/samtools/faidx/main'                            
+
 
 /// 
 /// MODULE: Local modules
 ///
 include { SAMTOOLS_MERGE_ON_INTERVAL } from '../modules/local/samtools_merge_on_interval'
+include { MAKE_GENOME_FILES } from '../modules/local/make_genome_files'
 
 
 /*
@@ -128,27 +131,48 @@ workflow SPARSE {
     bam_channel.combine(SAMTOOLS_INDEX.out.bai, by: 0)
         .set { indexed_bams }
 
-    ///
-    /// MODULE: Run MakeWindows
-    ///
+    def reference_genome = [
+        [ id:"reference_genome" ],
+        file(params.fasta, checkIfExists: true),
+    ]
 
-    BEDTOOLS_MAKEWINDOWS(
-        [
-            [ id:'genome_intervals'],
-            file(params.genome_bed, checkIfExists: true)
-        ]
-    )
+    ///
+    /// Index genome
+    ///
+    SAMTOOLS_FAIDX ( reference_genome, [[],[]] )
 
+    SAMTOOLS_FAIDX.out.fa.join(
+        SAMTOOLS_FAIDX.out.fai
+    ).set { indexed_reference_genome }
+
+    ///
+    /// Prepare files with chromosome sizes
+    ///
+    MAKE_GENOME_FILES( SAMTOOLS_FAIDX.out.fai )
+
+    chrom_sizes = MAKE_GENOME_FILES.out.chrom_sizes.map { it -> it[1]}
+
+
+    ///
+    /// Make  windowsz
+    ///
+    BEDTOOLS_MAKEWINDOWS(MAKE_GENOME_FILES.out.chrom_bed)
+
+    ///
+    /// Extend windows
+    ///
     BEDTOOLS_SLOP(
         BEDTOOLS_MAKEWINDOWS.out.bed,
-        file(params.genome_sizes, checkIfExists: true)
+        chrom_sizes
     )
 
     BEDTOOLS_MAKEWINDOWS.out.bed
         .join(BEDTOOLS_SLOP.out.bed)
         .set { bedFiles }
 
-    // Turn interval files into one bed file per line/chunk
+    ///
+    /// Turn interval files into one bed file per line/chunk
+    /// 
     bedFiles
         .flatMap { meta,bed,sloppedBed ->
             lines = bed.readLines()
@@ -173,7 +197,7 @@ workflow SPARSE {
         }
         .set { intervals }
         
-    
+    ///
     /// Read interval ids to update the meta map
     /// [ chunk_id, interval ]
     intervals.calling
@@ -194,7 +218,7 @@ workflow SPARSE {
             it -> [[ id:it[0]],it[1]]
         }
         .set { intervals_for_imputation }
-
+        
 
        if ( !params.sparse_variants )  {
         CALLING(
@@ -210,20 +234,16 @@ workflow SPARSE {
         ]
     }
 
-    def reference_genome = [
-        [ id:"test_reference" ],
-        file(params.fasta, checkIfExists: true),
-        file(params.fai, checkIfExists: true),
-    ]
 
-    // reference_genome[0].view()
-  
+    ///
+    /// Imputation subworkflow
+    ///
     IMPUTATION(
         intervals_for_calling,
         intervals_for_imputation,
         indexed_bams,
         Channel.fromList([sparse_variants]),
-        Channel.fromList([reference_genome]),
+        Channel.fromList([indexed_reference_genome]),
         Channel.fromList([reference_panel])
     )
     // //
