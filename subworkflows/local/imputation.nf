@@ -6,6 +6,7 @@ include { SAMTOOLS_VIEW_ON_INTERVAL } from '../../modules/local/samtools_view_on
 include { SAMTOOLS_INDEX } from '../../modules/nf-core/samtools/index/main'
 include { STITCH } from '../../modules/nf-core/stitch/main'
 include { GLIMPSE_PHASE } from '../../modules/nf-core/glimpse/phase/main'
+include { GLIMPSE_LIGATE } from '../../modules/nf-core/glimpse/ligate/main'
 include { BEAGLE4_BEAGLE } from '../../modules/local/beagle4'
 include { BCFTOOLS_CONCAT } from '../../modules/nf-core/bcftools/concat/main'
 include { BCFTOOLS_INDEX } from '../../modules/nf-core/bcftools/index/main' 
@@ -15,6 +16,7 @@ include { SPLIT_POSITIONS } from '../../modules/local/split_positions'
 include { SAMTOOLS_SPLIT_BAM } from "../../modules/local/samtools_split_bam"
 include { TABIX_TABIX as TABIX_STITCH } from '../../modules/nf-core/tabix/tabix/main'   
 include { TABIX_TABIX as TABIX_BEAGLE } from '../../modules/nf-core/tabix/tabix/main'   
+include { TABIX_TABIX as TABIX_GLIMPSE } from '../../modules/nf-core/tabix/tabix/main'   
 include { TABIX_TABIX as TABIX_REF } from '../../modules/nf-core/tabix/tabix/main'
 include { TABIX_TABIX as TABIX_SPARSE } from '../../modules/nf-core/tabix/tabix/main'   
 
@@ -171,7 +173,7 @@ workflow IMPUTATION {
     // MODULE : BCFTOOLS CONCAT
     BCFTOOLS_CONCAT( stitch_vcf_indexed.collect() )
     }
-    
+
      intervals = imputation_intervals.join(calling_intervals)
 
         // Turn bed like intervals in chr:start-end
@@ -199,7 +201,7 @@ workflow IMPUTATION {
         ref_panel
             .join( TABIX_REF.out.tbi )
             .set { indexed_ref_panel }
-
+        
         empty_ch = Channel.of([[]])
         glimpse_input = indexed_sparse_vcf
             .combine(empty_ch) // samples file
@@ -219,10 +221,32 @@ workflow IMPUTATION {
                     map
                 ]
             }
-
-
-        // needs val(meta) , path(input), path(input_index), path(samples_file), val(input_region), val(output_region), path(reference), path(reference_index), path(map)
+        
+        ///
+        /// Glimpse Phase
+        /// needs val(meta) , path(input), path(input_index), path(samples_file), val(input_region), val(output_region), path(reference), path(reference_index), path(map)
         GLIMPSE_PHASE(glimpse_input)
+
+
+        ///
+        /// Index Glimpse output
+        ///
+        TABIX_GLIMPSE( GLIMPSE_PHASE.out.phased_variant )
+
+        GLIMPSE_PHASE.out.phased_variant
+            .join(TABIX_GLIMPSE.out.tbi)
+            .set { indexed_glimpse_output }
+
+        indexed_glimpse_output.view()
+
+        ligate_input = indexed_glimpse_output
+            .map { it -> [[id:"glimpse_output"], it[1], it[2]]}
+            .groupTuple( by: 0 )
+            .view()
+        ///
+        /// Glimpse Ligate
+        ///
+        GLIMPSE_LIGATE( ligate_input )
     }
 
 
