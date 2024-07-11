@@ -50,6 +50,7 @@ include { CALLING } from '../subworkflows/local/calling'
 // MODULE: Installed directly from nf-core/modules
 //
 include { QUALIMAP_BAMQC } from '../modules/nf-core/qualimap/bamqc/main'  
+include { BEDTOOLS_INTERSECT } from '../modules/nf-core/bedtools/intersect/main'
 include { BEDTOOLS_MAKEWINDOWS } from '../modules/nf-core/bedtools/makewindows/main' 
 include { BEDTOOLS_SLOP } from '../modules/nf-core/bedtools/slop/main'
 include { SAMTOOLS_INDEX } from '../modules/nf-core/samtools/index/main'
@@ -84,7 +85,7 @@ workflow SPARSE {
         params.imputation_tool != "glimpse" &
         params.imputation_tool != "beagle4"
         ) {
-        exit 1, 'Imputation tool should be one of stich, glimpse, ebagle4'
+        exit 1, 'Imputation tool should be one of stich, glimpse, beagle4'
     }
 
     if (params.imputation_tool == "glimpse" & !params.ref_panel) {
@@ -150,13 +151,27 @@ workflow SPARSE {
     ///
     MAKE_GENOME_FILES( SAMTOOLS_FAIDX.out.fai )
 
+    genome_bed = MAKE_GENOME_FILES.out.chrom_bed
     chrom_sizes = MAKE_GENOME_FILES.out.chrom_sizes.map { it -> it[1]}
 
 
+    /// 
+    /// Select subset of genome
     ///
-    /// Make  windowsz
+    if (params.genome_subset != null){
+        ch_genome_subset = channel.fromPath(params.genome_subset, checkIfExists: true)
+        BEDTOOLS_INTERSECT(
+            genome_bed.combine(ch_genome_subset),
+            MAKE_GENOME_FILES.out.chrom_sizes
+        )
+        genome_bed = BEDTOOLS_INTERSECT.out.intersect
+    }
+
+
     ///
-    BEDTOOLS_MAKEWINDOWS(MAKE_GENOME_FILES.out.chrom_bed)
+    /// Make  windows
+    ///
+    BEDTOOLS_MAKEWINDOWS(genome_bed)
 
     ///
     /// Extend windows
