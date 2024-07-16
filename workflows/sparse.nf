@@ -89,7 +89,7 @@ workflow SPARSE {
     }
 
     if (params.imputation_tool == "glimpse" & !params.ref_panel) {
-        exit 1, 'Imputation tool Glimpse requires a reference panel supplied with --ref_pannel'
+        exit 1, 'Imputation tool Glimpse requires a reference panel supplied with --ref_panel'
     } else if (params.imputation_tool == "stitch" | 
         (params.imputation_tool == "beagle4" & !params.ref_panel)) {
         reference_panel = null
