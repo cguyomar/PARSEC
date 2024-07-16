@@ -32,6 +32,7 @@ process SAMTOOLS_MERGE_ON_INTERVAL {
         merge \\
         --threads ${task.cpus-1} \\
         -L ${intervals} \\
+        -s 0 \\
         $args \\
         ${reference} \\
         ${prefix}.${file_type} \\

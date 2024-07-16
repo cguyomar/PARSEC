@@ -118,66 +118,66 @@ workflow IMPUTATION {
         }
         .set { positions }
         // meta, positions
-
+    
     positions.filter { meta, positions -> 
         positions.countLines() > 10
     } .set { positions }
 
     if (params.imputation_tool == "stitch"){
-    // Prepare stitch input
-    positions.map { meta, pos -> 
-        [ 
-            meta,
-            pos,
+        // Prepare stitch input
+        positions.map { meta, pos -> 
+            [ 
+                meta,
+                pos,
                 [], // input
                 [], // rdata
-            pos.readLines()[0].split('\t')?.first(),  //chr
-            params.npop, //npop
-            params.ngen  // ngen
-        ]
-    }
-    .set { stitch_input }
-
-    stitch_input
-        .join(indexed_bams_per_interval)
-        .multiMap { meta, pos,  arg1, arg2, chr, npop, ngen, bam, bai, bamlist -> 
-            input1: [meta, pos, arg1, arg2, chr, npop, ngen]
-            input2: [meta, bam, bai, bamlist]
+                pos.readLines()[0].split('\t')?.first(),  //chr
+                params.npop, //npop
+                params.ngen  // ngen
+            ]
         }
         .set { stitch_input }
 
-    STITCH(
-        stitch_input.input1,
-        stitch_input.input2,
-        genome,
-        []
-    )
-
-    // MODULE : BGZIP TABIX
-        TABIX_STITCH( STITCH.out.vcf )
-
-        TABIX_STITCH.out.tbi
-        .join(STITCH.out.vcf)
-        .map{ it -> [ [id: "imputed"], it[2], it[1] ] }
-        .groupTuple() 
-        .set { stitch_vcf_indexed }
-        // meta, [vcf.gz], [tbi]
+        stitch_input
+            .join(indexed_bams_per_interval)
+            .multiMap { meta, pos,  arg1, arg2, chr, npop, ngen, bam, bai, bamlist -> 
+                input1: [meta, pos, arg1, arg2, chr, npop, ngen]
+                input2: [meta, bam, bai, bamlist]
+            }
+            .set { stitch_input }   
         
-         
-    // MODULE : BCFTOOLS CONCAT
-    BCFTOOLS_CONCAT( stitch_vcf_indexed.collect() )
+        STITCH(
+            stitch_input.input1,
+            stitch_input.input2,
+            genome,
+            []
+        )
+
+        // MODULE : BGZIP TABIX
+            TABIX_STITCH( STITCH.out.vcf )
+
+            TABIX_STITCH.out.tbi
+            .join(STITCH.out.vcf)
+            .map{ it -> [ [id: "imputed"], it[2], it[1] ] }
+            .groupTuple() 
+            .set { stitch_vcf_indexed }
+            // meta, [vcf.gz], [tbi]
+            
+            
+        // MODULE : BCFTOOLS CONCAT
+        BCFTOOLS_CONCAT( stitch_vcf_indexed.collect() )
     }
 
-     intervals = imputation_intervals.join(calling_intervals)
+    intervals = imputation_intervals.join(calling_intervals)
 
-        // Turn bed like intervals in chr:start-end
-        intervals.map  {meta, int1, int2 -> 
-            split1 = int1.split("\t")
-            res1 = "${split1[0]}:${split1[1]}-${split1[2]}"
-            split2 = int2.split("\t")
-            res2 = "${split2[0]}:${split2[1]}-${split2[2]}"
-            return([meta, res1, res2])
-        }.set { intervals }  // meta, calling_interval, imputation_interval
+    // Turn bed like intervals in chr:start-end
+    intervals.map  {meta, int1, int2 -> 
+        split1 = int1.split("\t")
+        res1 = "${split1[0]}:${split1[1]}-${split1[2]}"
+        split2 = int2.split("\t")
+        res2 = "${split2[0]}:${split2[1]}-${split2[2]}"
+        return([meta, res1, res2])
+    }.set { intervals }  // meta, calling_interval, imputation_interval
     
     if (params.imputation_tool == "glimpse"){
          // Prepare data for Glimpse
@@ -284,7 +284,7 @@ workflow IMPUTATION {
                 intervals: it[3]
                 vcf: [ it[0], it[1], it[2] ]
             }
-            .set { indexed_vcf_for_view }
+            .set { indexed_vcf_for_view }  
 
         BCFTOOLS_VIEW(
             indexed_vcf_for_view.vcf,

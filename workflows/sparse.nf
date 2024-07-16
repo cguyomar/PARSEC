@@ -227,7 +227,7 @@ workflow SPARSE {
         .set { intervals_for_calling }
         // [meta, interval]
 
-    intervals_for_calling.collectFile(sort: false) { it -> 
+    intervals_for_calling.collectFile(sort: true) { it -> 
         [ it[0].id + ".bed", it[1] ]
     }.merge(intervals_for_calling) // bed, meta, interval
     .map { it -> [ it[1], it[0] ] } 
