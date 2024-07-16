@@ -264,14 +264,17 @@ workflow SPARSE {
     ///
     /// Imputation subworkflow
     ///
-    IMPUTATION(
-        intervals_for_calling,
-        intervals_for_imputation,
-        indexed_bams,
-        ch_sparse_variants,
-        indexed_reference_genome,
-        reference_panel
-    )
+    if (!params.skip_imputation) {
+        IMPUTATION(
+            intervals_for_calling,
+            intervals_for_imputation,
+            indexed_bams,
+            ch_sparse_variants,
+            indexed_reference_genome,
+            reference_panel
+        )
+    }
+    
     // //
     // // MODULE: Run BamQC
     // //
