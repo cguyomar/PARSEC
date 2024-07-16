@@ -90,16 +90,17 @@ workflow SPARSE {
 
     if (params.imputation_tool == "glimpse" & !params.ref_panel) {
         exit 1, 'Imputation tool Glimpse requires a reference panel supplied with --ref_pannel'
-    } else if (params.imputation_tool=="glimpse") {
-        reference_panel = 
-            [
-                [ id:"reference_panel" ],
-                file(params.ref_panel, checkIfExists: true),
-            ]
-        
-    } else {
+    } else if (params.imputation_tool == "stitch" | 
+        (params.imputation_tool == "beagle4" & !params.ref_panel)) {
         reference_panel = null
-    }
+    } else if (params.imputation_tool=="glimpse" || params.imputation_tool=="beagle4") {
+        reference_panel = Channel.fromPath(params.ref_panel, checkIfExists: true)
+            .map { it ->
+            [
+                [ id:"reference panel" ],
+                it
+            ]}  
+    } 
 
     // //
     // // SUBWORKFLOW: Read in samplesheet, validate and stage input files
@@ -245,8 +246,14 @@ workflow SPARSE {
             intervals_for_calling_as_bed,
             indexed_bams
         )
-        CALLING.out.uncompressed_vcf
-            .set { ch_sparse_variants }
+        if ( params.imputation_tool=="stitch" ){
+            CALLING.out.uncompressed_vcf
+                .set { ch_sparse_variants }
+        } else {
+            CALLING.out.vcf
+                .set { ch_sparse_variants }
+        }
+        
     } else {
         ch_sparse_variants = [
             [ id:"sparse_variants" ],
@@ -263,7 +270,7 @@ workflow SPARSE {
         indexed_bams,
         ch_sparse_variants,
         indexed_reference_genome,
-        Channel.fromList([reference_panel])
+        reference_panel
     )
     // //
     // // MODULE: Run BamQC

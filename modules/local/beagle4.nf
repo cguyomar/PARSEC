@@ -10,7 +10,7 @@ process BEAGLE4_BEAGLE {
     input:
     tuple val(meta_vcf), path(vcf)
     tuple val(meta_interval), val(interval)
-    path(refpanel)
+    tuple val(meta_panel), path(refpanel)
     path(genmap)
     path(exclsamples)
     path(exclmarkers)
@@ -41,6 +41,7 @@ process BEAGLE4_BEAGLE {
     """
     beagle -Xmx${avail_mem}M \\
         gl=${vcf} \\
+        impute=true \\
         out=${prefix} \\
         $args \\
         ${interval_command} \\

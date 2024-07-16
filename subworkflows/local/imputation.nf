@@ -249,9 +249,10 @@ workflow IMPUTATION {
                 meta,
                 calling_int
             ]}.set{ beagle_intervals }
+        beagle_intervals.view()
 
-
-        BEAGLE4_BEAGLE(
+        if (ref_panel==null){
+            BEAGLE4_BEAGLE(
             sparse_vcf.collect(), // allows to run several times with only one vcf
             beagle_intervals,
             [],
@@ -259,6 +260,17 @@ workflow IMPUTATION {
             [],
             [],
         )
+        } else {
+            BEAGLE4_BEAGLE(
+            sparse_vcf.collect(), // allows to run several times with only one vcf
+            beagle_intervals,
+            ref_panel,
+            [],
+            [],
+            [],
+        )
+        }
+
 
         
 
