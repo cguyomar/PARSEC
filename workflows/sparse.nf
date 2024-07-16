@@ -132,17 +132,22 @@ workflow SPARSE {
     bam_channel.combine(SAMTOOLS_INDEX.out.bai, by: 0)
         .set { indexed_bams }
 
-    def reference_genome = [
+    reference_genome = Channel.fromPath(params.fasta, checkIfExists: true)
+        .map { it -> 
+        [
         [ id:"reference_genome" ],
-        file(params.fasta, checkIfExists: true),
+            it
     ]
+        }
 
     ///
     /// Index genome
     ///
     SAMTOOLS_FAIDX ( reference_genome, [[],[]] )
 
-    SAMTOOLS_FAIDX.out.fa.join(
+
+
+    reference_genome.join(
         SAMTOOLS_FAIDX.out.fai
     ).set { indexed_reference_genome }
 
@@ -240,15 +245,14 @@ workflow SPARSE {
             intervals_for_calling_as_bed,
             indexed_bams
         )
-        CALLING.out.vcf
-            .set { sparse_variants }
+        CALLING.out.uncompressed_vcf
+            .set { ch_sparse_variants }
     } else {
-        sparse_variants = [
+        ch_sparse_variants = [
             [ id:"sparse_variants" ],
             file(params.sparse_variants)
         ]
     }
-
 
     ///
     /// Imputation subworkflow
@@ -257,8 +261,8 @@ workflow SPARSE {
         intervals_for_calling,
         intervals_for_imputation,
         indexed_bams,
-        Channel.fromList([sparse_variants]),
-        Channel.fromList([indexed_reference_genome]),
+        ch_sparse_variants,
+        indexed_reference_genome,
         Channel.fromList([reference_panel])
     )
     // //

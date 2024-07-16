@@ -23,7 +23,7 @@ process SPLIT_POSITIONS {
    
     chunk_id=\$(head -1 int.bed | cut -f4)
     echo chunk\$chunk_id
-    bedtools intersect -a ${bed} -b int.bed | awk 'BEGIN {OFS="\t"} {print \$1,\$2,\$4,\$5}' > res/chunk_\$chunk_id.tsv
+    bedtools intersect -a ${bed} -b int.bed | awk 'BEGIN {OFS="\t"} {print \$1,\$2,\$4,\$5}' > res/chunk\$chunk_id.tsv
 
     """
 }

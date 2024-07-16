@@ -34,7 +34,6 @@ workflow IMPUTATION {
 
     main:
 
-
     calling_intervals.map { it ->
             it[1]
         }
@@ -69,12 +68,7 @@ workflow IMPUTATION {
             res = []
             bams.eachWithIndex { bam, index ->
                 filename = bam.getName()
-                chunk_id = "chunk_" + bam.simpleName
-                // bam_name = filename.split("\\.")
-                // bam_name = bam_name[1..-2].join(".")
-                // meta.bam_id = meta.id
-                // meta.chunk_id = chunk_id
-                // meta.id = bam_name + ":" + chunk_id
+                chunk_id = "chunk" + bam.simpleName
                 meta = [ id: chunk_id ]
                 res.add([ meta, bam, bais[index] ] )
             }
@@ -108,8 +102,8 @@ workflow IMPUTATION {
 
     //Convert vcf to tab and split by chunk
 
-    // calling_intervals.view()
     VCF_TO_TAB( sparse_vcf )
+
 
     calling_intervals.combine( VCF_TO_TAB.out.bed )
         .set { sites_to_split }
@@ -135,8 +129,8 @@ workflow IMPUTATION {
         [ 
             meta,
             pos,
-            [],
-            [],
+                [], // input
+                [], // rdata
             pos.readLines()[0].split('\t')?.first(),  //chr
             params.npop, //npop
             params.ngen  // ngen
@@ -237,12 +231,9 @@ workflow IMPUTATION {
             .join(TABIX_GLIMPSE.out.tbi)
             .set { indexed_glimpse_output }
 
-        indexed_glimpse_output.view()
-
         ligate_input = indexed_glimpse_output
             .map { it -> [[id:"glimpse_output"], it[1], it[2]]}
             .groupTuple( by: 0 )
-            .view()
         ///
         /// Glimpse Ligate
         ///
@@ -259,7 +250,6 @@ workflow IMPUTATION {
                 calling_int
             ]}.set{ beagle_intervals }
 
-        sparse_vcf.view()
 
         BEAGLE4_BEAGLE(
             sparse_vcf.collect(), // allows to run several times with only one vcf
@@ -275,9 +265,7 @@ workflow IMPUTATION {
         // bcftools index
         BCFTOOLS_INDEX(BEAGLE4_BEAGLE.out.vcf)
 
-        BCFTOOLS_INDEX.out.tbi.view()
-
-        BEAGLE4_BEAGLE.out.vcf.view()
+        BEAGLE4_BEAGLE.out.vcf
             .join(BCFTOOLS_INDEX.out.csi, by: 0)
             .set { indexed_vcfs }
         // meta, vcf, tbi
@@ -287,22 +275,16 @@ workflow IMPUTATION {
             [ it[0].id + ".bed", it[1] ]
         }.merge(calling_intervals) // bed, meta, interval
         .map { it -> [ it[1], it[0] ] }
-        .view{ it -> "toto : "+it} 
         .set { calling_intervals_as_bed } // meta, bed
 
         // bcftools view
         indexed_vcfs
         .join(calling_intervals_as_bed)
-        .view()  // meta, vcf, tbi, interval
             .multiMap { it -> 
                 intervals: it[3]
                 vcf: [ it[0], it[1], it[2] ]
             }
             .set { indexed_vcf_for_view }
-
-        indexed_vcf_for_view.intervals.view()    
-
-        imputation_intervals.view()
 
         BCFTOOLS_VIEW(
             indexed_vcf_for_view.vcf,

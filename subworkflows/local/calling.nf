@@ -6,6 +6,8 @@ include { SAMTOOLS_MERGE_ON_INTERVAL } from '../../modules/local/samtools_merge_
 include { BCFTOOLS_MPILEUP } from '../../modules/nf-core/bcftools/mpileup/main'
 include { BCFTOOLS_CONCAT } from '../../modules/nf-core/bcftools/concat/main'
 include { BCFTOOLS_SORT } from '../../modules/nf-core/bcftools/sort/main'
+include { GUNZIP } from '../../modules/nf-core/gunzip/main'
+
 
 workflow CALLING {
     take:
@@ -29,7 +31,7 @@ workflow CALLING {
 
     // Group bams of the same interval
     bam_groupped_by_interval = bams_with_intervals
-        .groupTuple(by: [0,3])
+        .groupTuple(by: [0,3], sort: 'hash')
         .map { meta, bamlist, bailist, interval ->
             [meta, bamlist, bailist, interval]
         }
@@ -76,7 +78,13 @@ workflow CALLING {
     ///
     BCFTOOLS_SORT(BCFTOOLS_CONCAT.out.vcf)
 
+    ///
+    /// MODULE: Unzip vcf
+    ///
+    GUNZIP(BCFTOOLS_SORT.out.vcf)
+
     emit:
     vcf = BCFTOOLS_SORT.out.vcf  
+    uncompressed_vcf = GUNZIP.out.gunzip 
     // versions = SAMTOOLS_VIEW_ON_INTERVAL.out. // channel: [ versions.yml ]
 }
