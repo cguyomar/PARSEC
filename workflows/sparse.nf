@@ -241,7 +241,7 @@ workflow SPARSE {
         .set { intervals_for_imputation }
         
 
-       if ( !params.sparse_variants )  {
+    if ( !params.sparse_variants )  {
         CALLING(
             intervals_for_calling_as_bed,
             indexed_bams

@@ -16,7 +16,7 @@ process MAKE_GENOME_FILES {
     script:
     """
     awk -v OFS='\t' {'print \$1,\$2'} $fai > ${meta.id}.chrom.sizes
-    awk -v OFS='\t' {'print \$1,0,\$2'} $fai > ${meta.id}.chrom.bed
+    awk -v OFS='\t' {'print \$1,0,\$2,\$1'} $fai > ${meta.id}.chrom.bed
 
     """
 }
