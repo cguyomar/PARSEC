@@ -55,6 +55,7 @@ workflow IMPUTATION {
             ]
         }
         .set{ imputation_intervals_bed }
+
     bams.combine(imputation_intervals_bed)
         .set{ bams_with_intervals }
 
@@ -68,7 +69,7 @@ workflow IMPUTATION {
             res = []
             bams.eachWithIndex { bam, index ->
                 filename = bam.getName()
-                chunk_id = "chunk" + bam.simpleName
+                chunk_id = "chunk_" + bam.simpleName
                 meta = [ id: chunk_id ]
                 res.add([ meta, bam, bais[index] ] )
             }
@@ -149,7 +150,7 @@ workflow IMPUTATION {
         STITCH(
             stitch_input.input1,
             stitch_input.input2,
-            genome,
+            genome.collect(),
             []
         )
 
