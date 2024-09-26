@@ -69,7 +69,10 @@ workflow IMPUTATION {
             res = []
             bams.eachWithIndex { bam, index ->
                 filename = bam.getName()
-                chunk_id = "chunk_" + bam.simpleName
+                
+                // Regexp to capture chunk name ("chr_i") in file name
+                matcher = (bam.name =~ /^(([^._]+_)?[^.]+)(?:\..*)?/)
+                chunk_id = "chunk_" +  matcher[0][1]
                 meta = [ id: chunk_id ]
                 res.add([ meta, bam, bais[index] ] )
             }
@@ -97,7 +100,7 @@ workflow IMPUTATION {
         .set { indexed_bams_per_interval } 
     // meta, [bams], [bais], bamlist
 
-
+    print(indexed_bams_per_interval)
 
     // What we want : meta, [bams], [bais], bamlist
 
