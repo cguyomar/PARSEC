@@ -64,12 +64,16 @@ workflow IMPUTATION {
         [[],[]]
     )
 
+    ///
+    /// group bams by interval instead of sample
+    ///
     SAMTOOLS_SPLIT_BAM.out.indexed_bams
         .flatMap { meta, bams, bais -> 
             res = []
             bams.eachWithIndex { bam, index ->
                 filename = bam.getName()
-                chunk_id = "chunk_" + bam.simpleName
+                matcher = (bam.name =~ /(?<=interval:)(.*?)(?=_sample)/)
+                chunk_id = "chunk_" + matcher[0][1]
                 meta = [ id: chunk_id ]
                 res.add([ meta, bam, bais[index] ] )
             }

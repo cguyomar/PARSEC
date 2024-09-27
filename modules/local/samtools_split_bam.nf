@@ -32,8 +32,8 @@ process SAMTOOLS_SPLIT_BAM {
     while IFS=\$'\t' read -r chrom start end name
     do
         #output_bam="bam_split/\$chrom_\$start_\$end.bam"
-        samtools view -b "${input}" "\$chrom:\$start-\$end" > bam_split/\$name.${input}
-        samtools index bam_split/\$name.${input}
+        samtools view -b "${input}" "\$chrom:\$start-\$end" > bam_split/interval:\${name}_sample:${input}
+        samtools index  bam_split/interval:\${name}_sample:${input}
     done < ${intervals}
 
 

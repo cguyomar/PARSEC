@@ -64,8 +64,6 @@ include { SAMTOOLS_FAIDX } from '../modules/nf-core/samtools/faidx/main'
 ///
 include { SAMTOOLS_MERGE_ON_INTERVAL } from '../modules/local/samtools_merge_on_interval'
 include { MAKE_GENOME_FILES } from '../modules/local/make_genome_files'
-include { RENAME_CHROMOSOMES } from '../modules/local/rename_chromosomes'
-
 
 
 /*
@@ -181,19 +179,11 @@ workflow SPARSE {
     ///
     BEDTOOLS_MAKEWINDOWS(genome_bed)
 
-
-    ///
-    /// Rename chromosomes in bed (remove "." characters)
-    ///
-    RENAME_CHROMOSOMES(
-        BEDTOOLS_MAKEWINDOWS.out.bed
-    )
-
     ///
     /// Extend windows
     ///
     BEDTOOLS_SLOP(
-        RENAME_CHROMOSOMES.out.bed,
+        BEDTOOLS_MAKEWINDOWS.out.bed,
         chrom_sizes
     )
 
