@@ -69,10 +69,7 @@ workflow IMPUTATION {
             res = []
             bams.eachWithIndex { bam, index ->
                 filename = bam.getName()
-                
-                // Regexp to capture chunk name ("chr_i") in file name
-                matcher = (bam.name =~ /^(([^._]+_)?[^.]+)(?:\..*)?/)
-                chunk_id = "chunk_" +  matcher[0][1]
+                chunk_id = "chunk_" + bam.simpleName
                 meta = [ id: chunk_id ]
                 res.add([ meta, bam, bais[index] ] )
             }
