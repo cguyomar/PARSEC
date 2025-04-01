@@ -1,6 +1,6 @@
 {
-    "name": "nf/sparse",
-    "homePage": "https://github.com/nf/sparse",
+    "name": "cguyomar/parsec",
+    "homePage": "https://github.com/nf-core/parsec",
     "repos": {
         "https://github.com/nf-core/modules.git": {
             "modules": {
