@@ -4,80 +4,80 @@ nf_core_version: 3.2.0
 
 lint:
   files_unchanged:
-    - .github/ISSUE_TEMPLATE/bug_report.yml
-    - .github/ISSUE_TEMPLATE/config.yml
-    - .github/ISSUE_TEMPLATE/feature_request.yml
-    - .github/PULL_REQUEST_TEMPLATE.md
-    - .github/workflows/branch.yml
-    - .github/workflows/linting_comment.yml
-    - .github/workflows/linting.yml
-    - .github/CONTRIBUTING.md
-    - .github/.dockstore.yml
-    - .github/CONTRIBUTING.md
-    - assets/sendmail_template.txt
-    - .prettierignore
-    - .prettierignore
-    - .github/ISSUE_TEMPLATE/bug_report.yml
-    - .github/ISSUE_TEMPLATE/config.yml
-    - .github/ISSUE_TEMPLATE/feature_request.yml
-    - .github/PULL_REQUEST_TEMPLATE.md
-    - .github/workflows/branch.yml
-    - .github/workflows/linting_comment.yml
-    - .github/workflows/linting.yml
-    - .github/CONTRIBUTING.md
-    - .github/.dockstore.yml
-    - .github/CONTRIBUTING.md
-    - assets/sendmail_template.txt
-    - .prettierignore
-    - .prettierignore
-    - CODE_OF_CONDUCT.md
-    - assets/nf-core-parsec_logo_light.png
-    - docs/images/nf-core-parsec_logo_light.png
-    - docs/images/nf-core-parsec_logo_dark.png
-    - .github/ISSUE_TEMPLATE/bug_report.yml
-    - .github/CONTRIBUTING.md
-    - .github/PULL_REQUEST_TEMPLATE.md
-    - assets/email_template.txt
-    - docs/README.md
+  - .github/ISSUE_TEMPLATE/bug_report.yml
+  - .github/ISSUE_TEMPLATE/config.yml
+  - .github/ISSUE_TEMPLATE/feature_request.yml
+  - .github/PULL_REQUEST_TEMPLATE.md
+  - .github/workflows/branch.yml
+  - .github/workflows/linting_comment.yml
+  - .github/workflows/linting.yml
+  - .github/CONTRIBUTING.md
+  - .github/.dockstore.yml
+  - .github/CONTRIBUTING.md
+  - assets/sendmail_template.txt
+  - .prettierignore
+  - .prettierignore
+  - .github/ISSUE_TEMPLATE/bug_report.yml
+  - .github/ISSUE_TEMPLATE/config.yml
+  - .github/ISSUE_TEMPLATE/feature_request.yml
+  - .github/PULL_REQUEST_TEMPLATE.md
+  - .github/workflows/branch.yml
+  - .github/workflows/linting_comment.yml
+  - .github/workflows/linting.yml
+  - .github/CONTRIBUTING.md
+  - .github/.dockstore.yml
+  - .github/CONTRIBUTING.md
+  - assets/sendmail_template.txt
+  - .prettierignore
+  - .prettierignore
+  - CODE_OF_CONDUCT.md
+  - assets/nf-core-parsec_logo_light.png
+  - docs/images/nf-core-parsec_logo_light.png
+  - docs/images/nf-core-parsec_logo_dark.png
+  - .github/ISSUE_TEMPLATE/bug_report.yml
+  - .github/CONTRIBUTING.md
+  - .github/PULL_REQUEST_TEMPLATE.md
+  - assets/email_template.txt
+  - docs/README.md
   nextflow_config:
-    - manifest.name
-    - manifest.homePage
-    - validation.help.beforeText
-    - validation.help.afterText
-    - validation.summary.beforeText
-    - validation.summary.afterText
+  - manifest.name
+  - manifest.homePage
+  - validation.help.beforeText
+  - validation.help.afterText
+  - validation.summary.beforeText
+  - validation.summary.afterText
   multiqc_config: false
   files_exist:
-    - .github/ISSUE_TEMPLATE/bug_report.yml
-    - .github/ISSUE_TEMPLATE/feature_request.yml
-    - .github/PULL_REQUEST_TEMPLATE.md
-    - .github/CONTRIBUTING.md
-    - .github/.dockstore.yml
-    - .github/workflows/branch.yml
-    - .github/workflows/ci.yml
-    - .github/workflows/linting_comment.yml
-    - .github/workflows/linting.yml
-    - assets/multiqc_config.yml
-    - .github/ISSUE_TEMPLATE/bug_report.yml
-    - .github/ISSUE_TEMPLATE/feature_request.yml
-    - .github/PULL_REQUEST_TEMPLATE.md
-    - .github/CONTRIBUTING.md
-    - .github/.dockstore.yml
-    - .github/workflows/branch.yml
-    - .github/workflows/ci.yml
-    - .github/workflows/linting_comment.yml
-    - .github/workflows/linting.yml
-    - assets/multiqc_config.yml
-    - CODE_OF_CONDUCT.md
-    - assets/nf-core-parsec_logo_light.png
-    - docs/images/nf-core-parsec_logo_light.png
-    - docs/images/nf-core-parsec_logo_dark.png
-    - .github/ISSUE_TEMPLATE/config.yml
-    - .github/workflows/awstest.yml
-    - .github/workflows/awsfulltest.yml
+  - .github/ISSUE_TEMPLATE/bug_report.yml
+  - .github/ISSUE_TEMPLATE/feature_request.yml
+  - .github/PULL_REQUEST_TEMPLATE.md
+  - .github/CONTRIBUTING.md
+  - .github/.dockstore.yml
+  - .github/workflows/branch.yml
+  - .github/workflows/ci.yml
+  - .github/workflows/linting_comment.yml
+  - .github/workflows/linting.yml
+  - assets/multiqc_config.yml
+  - .github/ISSUE_TEMPLATE/bug_report.yml
+  - .github/ISSUE_TEMPLATE/feature_request.yml
+  - .github/PULL_REQUEST_TEMPLATE.md
+  - .github/CONTRIBUTING.md
+  - .github/.dockstore.yml
+  - .github/workflows/branch.yml
+  - .github/workflows/ci.yml
+  - .github/workflows/linting_comment.yml
+  - .github/workflows/linting.yml
+  - assets/multiqc_config.yml
+  - CODE_OF_CONDUCT.md
+  - assets/nf-core-parsec_logo_light.png
+  - docs/images/nf-core-parsec_logo_light.png
+  - docs/images/nf-core-parsec_logo_dark.png
+  - .github/ISSUE_TEMPLATE/config.yml
+  - .github/workflows/awstest.yml
+  - .github/workflows/awsfulltest.yml
   readme:
-    - nextflow_badge
-    - nextflow_badge
+  - nextflow_badge
+  - nextflow_badge
 
 template:
   org: cguyomar
@@ -85,14 +85,14 @@ template:
   description: A pipeline to perform variant calling and imputation from low coverage
     sequencing data
   author: Cervin Guyomar
-  version: 1.0.0dev
+  version: 0.1.0
   force: true
   outdir: .
   skip_features:
-    - github
-    - ci
-    - multiqc
-    - fastqc
-    - adaptivecard
-    - slackreport
+  - github
+  - ci
+  - multiqc
+  - fastqc
+  - adaptivecard
+  - slackreport
   is_nfcore: false

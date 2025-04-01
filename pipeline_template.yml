@@ -1,4 +1,0 @@
-prefix: nf
-skip:
-- github
-- nf_core_configs

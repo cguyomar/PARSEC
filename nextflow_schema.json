@@ -281,32 +281,10 @@
         "skip_imputation": {
             "type": "boolean"
         },
-        "max_memory": {
-            "type": "string",
-            "default": "4.GB"
-        },
-        "max_cpus": {
-            "type": "integer",
-            "default": 2
-        },
-        "max_time": {
-            "type": "string",
-            "default": "240.h"
-        },
-        "validationFailUnrecognisedParams": {
-            "type": "boolean"
-        },
-        "validationLenientMode": {
-            "type": "boolean"
-        },
-        "validationSchemaIgnoreParams": {
-            "type": "string",
-            "default": "genomes"
-        },
-        "validationShowHiddenParams": {
-            "type": "boolean"
-        },
         "modules_testdata_base_path": {
+            "type": "string"
+        },
+        "multiqc_title": {
             "type": "string"
         }
     }

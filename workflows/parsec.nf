@@ -6,12 +6,11 @@
 
 include { paramsSummaryLog; paramsSummaryMap } from 'plugin/nf-validation'
 
-def logo = NfcoreTemplate.logo(workflow, params.monochrome_logs)
-def citation = '\n' + WorkflowMain.citation(workflow) + '\n'
+// def citation = '\n' + WorkflowMain.citation(workflow) + '\n'
 def summary_params = paramsSummaryMap(workflow)
 
 // Print parameter summary log to screen
-log.info logo + paramsSummaryLog(workflow) + citation
+paramsSummaryLog(workflow) // + citation
 
 WorkflowSparse.initialise(params, log)
 
@@ -315,21 +314,6 @@ workflow PARSEC {
 //     multiqc_report = MULTIQC.out.report.toList()
 }
 
-/*
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    COMPLETION EMAIL AND SUMMARY
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-*/
-
-workflow.onComplete {
-    if (params.email || params.email_on_fail) {
-        NfcoreTemplate.email(workflow, params, summary_params, projectDir, log, multiqc_report)
-    }
-    NfcoreTemplate.summary(workflow, params, log)
-    if (params.hook_url) {
-        NfcoreTemplate.IM_notification(workflow, params, summary_params, projectDir, log)
-    }
-}
 
 /*
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
