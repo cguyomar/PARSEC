@@ -1,4 +1,4 @@
-## Introduction
+# Introduction
 
 **PARSEC** is a bioinformatics pipeline designed to genotype large populations using low coverage (typically <3X) sequencing data.
 Three imputation software are available as of today :
@@ -24,16 +24,16 @@ Three imputation software are available as of today :
 9. Sort vcf  ([`bcftools`](http://www.htslib.org/download/))
 
 
-## Usage
+# Usage
 
-### Inputs
+## Inputs
 
-#### Aligned reads
+### Aligned reads
 
 PARSEC takes `bam` files as input. It is advised to perform duplicated marking and eventually BQSR recalibration on the bam files.
 [Sarek](https://nf-co.re/sarek) can be used to automate read alignement (by not specifying any calling tool and eventually adding `--skip_tools baserecalibrator`)
 
-#### Reference panel
+### Reference panel
 
 Depending on the imputation method used, it may be necessary to supply a set of (preferentially phased) known variants (aka reference panel)
 - `Glimpse` requires a reference panel supplied with `--ref_panel`
@@ -47,32 +47,83 @@ Depending on the imputation method used, it may be necessary to supply a set of 
 | **Beagle**  | ⚠️ Facultative                                   | ❌ Not applicable                                               |
 | **Stitch**  | ❌ Not applicable                                | ✅ Recommended (hard-filtered output of a PARSEC `calling` run) |
 
+## PARSEC main parameters
+
+default nextflow/nf-core parameters are omitted                                                                                                                                        
+                                                                                                                                                                   
+Define where the pipeline should find input data and save output data.                                                                                             
+                                                                                                                                                                   
+| Parameter | Description | Type | Default | Required |                                                                                                            
+|-----------|-----------|-----------|-----------|-----------|                                                                                                      
+| `bam` | glob for input bams | `string` |  | True |                                                                                                               
+| `ref_panel` | Reference  panel VCF | `string` |  |  |                                                                                                            
+| `sparse_variants` | VCF of variable positions used in stitch | `string` |  |  |                                                                                  
+| `imputation_tool` | Imputation tool (stitch, beagl4 or glimpse) | `string` | stitch | True |                                                                     
+| `fasta` | Path to FASTA genome file. <details><summary>Help</summary><small>This parameter is *mandatory* if `--genome` is not specified. If you don't have a BWA
+index available this will be generated for you automatically. Combine with `--save_reference` to save BWA index for future runs.</small></details>| `string` |  |                                                                         
+| `genome_subset` | bed file specifying a genomic region to analyze | `string` |  |  |                                                                             
+| `window_size` | Size of genomic windows used for parrallelization | `integer` | 1000000 |  |                                                                     
+| `buffer_size` | Length of overlap between windows. A minimal overlap is required for good imputation | `integer` | 100000 |  |                                   
+| `ngen` | Stitch parameter - number of iterations | `integer` | 1000 |  |                                                                                                                                
+| `npop` | Stitch parameter - number of haplotypes | `integer` | 10 |  |                                                                                                                                  
+| `skip_imputation` | Stop after calling/genotyping | `boolean` |  |  |   *
+
+
+## Example usage
 
 > **Note**
 > If you are new to Nextflow and nf-core, please refer to [this page](https://nf-co.re/docs/usage/installation) on how
 > to set-up Nextflow. Make sure to [test your setup](https://nf-co.re/docs/usage/introduction#how-to-run-a-pipeline)
 > with `-profile test` before running the workflow on actual data.
+> ( not yet available for PARSEC)
 
-<!-- TODO nf-core: Describe the minimum required steps to execute the pipeline, e.g. how to prepare samplesheets.
-     Explain what rows and columns represent. For instance (please edit as appropriate):
-
-Imputation requires a list of variant positions supplied as a vcf (no sample information is needed).
-This list can be generated by the pipeline using the calling subworflow or supplied by the user using the `--known_variants` option.
-
-Here is a typical of the pipeline with the avaialble options :
+### I have a reference panel
 
 ```bash
-nextflow run nf/sparse \
+nextflow run cguyomar/PARSEC \
    -profile <docker/singularity/.../institute> \
    --bam "/path/to/data/*.bam" \
    --fasta genome.fa \
-	--fai genome.fa.fai \
-	--genome_bed genome.bed \
-	--genome_sizes genome.sizes.txt  \
-	--window_size 1000000 \
-	--npop 10 \
-	--ngen 100 \
-	--buffer_size 100000 \
+   --ref_panel my_panel.vcf.gz \
+   --imputation_tool glimpse \ # or beagle4  
+   --outdir <OUTDIR>
+```
+
+### I don't have a reference panel - Stitch
+
+PARSEC will perform a rough SNP calling on your data (using `bcftools mpileup`) and then used the detected positions for stitch imputation
+
+```bash
+nextflow run cguyomar/PARSEC \
+   -profile <docker/singularity/.../institute> \
+   --bam "/path/to/data/*.bam" \
+   --fasta genome.fa \
+   --imputation_tool stitch \ # or beagle4  
+   --outdir <OUTDIR>
+```
+
+A preferred approach is to do perform some user-defined hard filtering on the `mpileup`, first using option `--skip_imputation`, and then filtering the variant calling output (using for instance QUAL, or some external validation set).
+
+An imputation PARSEC run can then be run using the filtered variants as a primer :
+
+```bash
+nextflow run cguyomar/PARSEC \
+   -profile <docker/singularity/.../institute> \
+   --bam "/path/to/data/*.bam" \
+   --sparse_variants /res/of/previous/run/filtered.vcf.gz \
+   --fasta genome.fa \
+   --imputation_tool stitch  \
+   --outdir <OUTDIR>
+```
+
+### I don't have a reference panel - Beagle
+
+```bash
+nextflow run cguyomar/PARSEC \
+   -profile <docker/singularity/.../institute> \
+   --bam "/path/to/data/*.bam" \
+   --fasta genome.fa \
+   --imputation_tool beagle4
    --outdir <OUTDIR>
 ```
 
@@ -96,7 +147,7 @@ If you would like to contribute to this pipeline, please see the [contributing g
 
 <!-- TODO nf-core: Add bibliography of tools and data used in your pipeline -->
 
-An extensive list of references for the tools used by the pipeline can be found in the [`CITATIONS.md`](CITATIONS.md) file.
+An extensive list of references fornf-core pipelines bump-version 0.1.0 the tools used by the pipeline can be found in the [`CITATIONS.md`](CITATIONS.md) file.
 
 This pipeline uses code and infrastructure developed and maintained by the [nf-core](https://nf-co.re) community, reused here under the [MIT license](https://github.com/nf-core/tools/blob/master/LICENSE).
 
@@ -105,3 +156,4 @@ This pipeline uses code and infrastructure developed and maintained by the [nf-c
 > Philip Ewels, Alexander Peltzer, Sven Fillinger, Harshil Patel, Johannes Alneberg, Andreas Wilm, Maxime Ulysse Garcia, Paolo Di Tommaso & Sven Nahnsen.
 >
 > _Nat Biotechnol._ 2020 Feb 13. doi: [10.1038/s41587-020-0439-x](https://dx.doi.org/10.1038/s41587-020-0439-x).
+nf-core pipelines bump-version 0.1.0
