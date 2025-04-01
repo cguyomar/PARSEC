@@ -1,29 +1,12 @@
-<h1>
-  <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="docs/images/nf-core-parsec_logo_dark.png">
-    <img alt="nf-core/parsec" src="docs/images/nf-core-parsec_logo_light.png">
-  </picture>
-</h1>
-
-[![GitHub Actions CI Status](https://github.com/nf-core/parsec/actions/workflows/ci.yml/badge.svg)](https://github.com/nf-core/parsec/actions/workflows/ci.yml)
-[![GitHub Actions Linting Status](https://github.com/nf-core/parsec/actions/workflows/linting.yml/badge.svg)](https://github.com/nf-core/parsec/actions/workflows/linting.yml)[![AWS CI](https://img.shields.io/badge/CI%20tests-full%20size-FF9900?labelColor=000000&logo=Amazon%20AWS)](https://nf-co.re/parsec/results)[![Cite with Zenodo](http://img.shields.io/badge/DOI-10.5281/zenodo.XXXXXXX-1073c8?labelColor=000000)](https://doi.org/10.5281/zenodo.XXXXXXX)
-[![nf-test](https://img.shields.io/badge/unit_tests-nf--test-337ab7.svg)](https://www.nf-test.com)
-
-[![Nextflow](https://img.shields.io/badge/nextflow%20DSL2-%E2%89%A524.04.2-23aa62.svg)](https://www.nextflow.io/)
-[![run with conda](http://img.shields.io/badge/run%20with-conda-3EB049?labelColor=000000&logo=anaconda)](https://docs.conda.io/en/latest/)
-[![run with docker](https://img.shields.io/badge/run%20with-docker-0db7ed?labelColor=000000&logo=docker)](https://www.docker.com/)
-[![run with singularity](https://img.shields.io/badge/run%20with-singularity-1d355c.svg?labelColor=000000)](https://sylabs.io/docs/)
-[![Launch on Seqera Platform](https://img.shields.io/badge/Launch%20%F0%9F%9A%80-Seqera%20Platform-%234256e7)](https://cloud.seqera.io/launch?pipeline=https://github.com/nf-core/parsec)
-
-[![Get help on Slack](http://img.shields.io/badge/slack-nf--core%20%23parsec-4A154B?labelColor=000000&logo=slack)](https://nfcore.slack.com/channels/parsec)[![Follow on Twitter](http://img.shields.io/badge/twitter-%40nf__core-1DA1F2?labelColor=000000&logo=twitter)](https://twitter.com/nf_core)[![Follow on Mastodon](https://img.shields.io/badge/mastodon-nf__core-6364ff?labelColor=FFFFFF&logo=mastodon)](https://mstdn.science/@nf_core)[![Watch on YouTube](http://img.shields.io/badge/youtube-nf--core-FF0000?labelColor=000000&logo=youtube)](https://www.youtube.com/c/nf-core)
-
-
 ## Introduction
 
-**PARSEC** (imPutAtion for spaRSE sequenCing) is a bioinformatics pipeline designed to genotype large populations using low coverage sequencing data.
-It relies on `bcftools mpileup` to detect SNP sites and `stitch` to impute genotypes.
+**PARSEC** is a bioinformatics pipeline designed to genotype large populations using low coverage (typically <3X) sequencing data.
+Three imputation software are available as of today :
+- [`Stitch`](https://github.com/rwdavies/STITCH)
+- [`Glimpse1`](https://odelaneau.github.io/GLIMPSE/glimpse1/index.html)
+- [`Beagle4`](https://faculty.washington.edu/browning/beagle/b4_0.html)
 
-**The pipeline is still in early development**
+**The pipeline is still in development, please reach out if you need help for running it or encounter bugs**
 
 ![metro map](docs/images/PARSEC_metro_map.png)
 
@@ -43,11 +26,32 @@ It relies on `bcftools mpileup` to detect SNP sites and `stitch` to impute genot
 
 ## Usage
 
-> [!NOTE]
-> If you are new to Nextflow and nf-core, please refer to [this page](https://nf-co.re/docs/usage/installation) on how to set-up Nextflow. Make sure to [test your setup](https://nf-co.re/docs/usage/introduction#how-to-run-a-pipeline) with `-profile test` before running the workflow on actual data.
+### Inputs
+
+#### Aligned reads
+
+PARSEC takes `bam` files as input. It is advised to perform duplicated marking and eventually BQSR recalibration on the bam files.
+[Sarek](https://nf-co.re/sarek) can be used to automate read alignement (by not specifying any calling tool and eventually adding `--skip_tools baserecalibrator`)
+
+#### Reference panel
+
+Depending on the imputation method used, it may be necessary to supply a set of (preferentially phased) known variants (aka reference panel)
+- `Glimpse` requires a reference panel supplied with `--ref_panel`
+- `Beagle` can take a reference panel supplied with `--ref_panel` as a facultative input
+- `Stitch` does not require a reference panel, but requires a set of SNP position, supplied as a vcf file (genotypes are not used). PARSEC can build it automatically using the `calling` subworkflow, but it is advised to validate it before running imputation. A good practice would be to run PARSEC a first time with `--skip_imputation`, hard filter the obtained variants, and run a second PARSEC run with `--sparse_variants` with the output of the first run
 
 
+| Tool        | VCF Reference panel supplied with `--ref_panel` | VCF of SNPs supplied with `--sparse_variants`                  |
+|-------------|-------------------------------------------------|----------------------------------------------------------------|
+| **Glimpse** | ✅ Mandatory                                     | ❌ Not applicable                                               |
+| **Beagle**  | ⚠️ Facultative                                   | ❌ Not applicable                                               |
+| **Stitch**  | ❌ Not applicable                                | ✅ Recommended (hard-filtered output of a PARSEC `calling` run) |
 
+
+> **Note**
+> If you are new to Nextflow and nf-core, please refer to [this page](https://nf-co.re/docs/usage/installation) on how
+> to set-up Nextflow. Make sure to [test your setup](https://nf-co.re/docs/usage/introduction#how-to-run-a-pipeline)
+> with `-profile test` before running the workflow on actual data.
 
 <!-- TODO nf-core: Describe the minimum required steps to execute the pipeline, e.g. how to prepare samplesheets.
      Explain what rows and columns represent. For instance (please edit as appropriate):
@@ -55,7 +59,7 @@ It relies on `bcftools mpileup` to detect SNP sites and `stitch` to impute genot
 Imputation requires a list of variant positions supplied as a vcf (no sample information is needed).
 This list can be generated by the pipeline using the calling subworflow or supplied by the user using the `--known_variants` option.
 
-Here is a typical of the pipeline with the avaialble options : 
+Here is a typical of the pipeline with the avaialble options :
 
 ```bash
 nextflow run nf/sparse \

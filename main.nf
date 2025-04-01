@@ -1,11 +1,9 @@
 #!/usr/bin/env nextflow
 /*
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    nf-core/parsec
+    cguyomar/parsec
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    Github : https://github.com/nf-core/parsec
-    Website: https://nf-co.re/parsec
-    Slack  : https://nfcore.slack.com/channels/parsec
+    Github : https://github.com/cguyomar/parsec
 ----------------------------------------------------------------------------------------
 */
 

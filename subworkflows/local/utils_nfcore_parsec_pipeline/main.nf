@@ -1,5 +1,5 @@
 //
-// Subworkflow with functionality specific to the nf-core/parsec pipeline
+// Subworkflow with functionality specific to the cguyomar/parsec pipeline
 //
 
 /*
@@ -13,7 +13,6 @@ include { paramsSummaryMap          } from 'plugin/nf-schema'
 include { samplesheetToList         } from 'plugin/nf-schema'
 include { completionEmail           } from '../../nf-core/utils_nfcore_pipeline'
 include { completionSummary         } from '../../nf-core/utils_nfcore_pipeline'
-include { imNotification            } from '../../nf-core/utils_nfcore_pipeline'
 include { UTILS_NFCORE_PIPELINE     } from '../../nf-core/utils_nfcore_pipeline'
 include { UTILS_NEXTFLOW_PIPELINE   } from '../../nf-core/utils_nextflow_pipeline'
 
@@ -140,8 +139,6 @@ workflow PIPELINE_COMPLETION {
         }
     }
 
-    workflow.onError {
-        log.error "Pipeline failed. Please refer to troubleshooting docs: https://nf-co.re/docs/usage/troubleshooting"
     }
 }
 
@@ -221,8 +218,6 @@ def toolBibliographyText() {
             "<li>Andrews S, (2010) FastQC, URL: https://www.bioinformatics.babraham.ac.uk/projects/fastqc/).</li>",
             "<li>Ewels, P., Magnusson, M., Lundin, S., & Käller, M. (2016). MultiQC: summarize analysis results for multiple tools and samples in a single report. Bioinformatics , 32(19), 3047–3048. doi: /10.1093/bioinformatics/btw354</li>"
         ].join(' ').trim()
-
-    return reference_text
 }
 
 def methodsDescriptionText(mqc_methods_yaml) {

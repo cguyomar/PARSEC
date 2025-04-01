@@ -49,17 +49,17 @@ include { CALLING } from '../subworkflows/local/calling'
 //
 // MODULE: Installed directly from nf-core/modules
 //
-include { QUALIMAP_BAMQC } from '../modules/nf-core/qualimap/bamqc/main'  
+include { QUALIMAP_BAMQC } from '../modules/nf-core/qualimap/bamqc/main'
 include { BEDTOOLS_INTERSECT } from '../modules/nf-core/bedtools/intersect/main'
-include { BEDTOOLS_MAKEWINDOWS } from '../modules/nf-core/bedtools/makewindows/main' 
+include { BEDTOOLS_MAKEWINDOWS } from '../modules/nf-core/bedtools/makewindows/main'
 include { BEDTOOLS_SLOP } from '../modules/nf-core/bedtools/slop/main'
 include { SAMTOOLS_INDEX } from '../modules/nf-core/samtools/index/main'
 include { MULTIQC                     } from '../modules/nf-core/multiqc/main'
 include { CUSTOM_DUMPSOFTWAREVERSIONS } from '../modules/nf-core/custom/dumpsoftwareversions/main'
-include { SAMTOOLS_FAIDX } from '../modules/nf-core/samtools/faidx/main'                            
+include { SAMTOOLS_FAIDX } from '../modules/nf-core/samtools/faidx/main'
 
 
-/// 
+///
 /// MODULE: Local modules
 ///
 include { SAMTOOLS_MERGE_ON_INTERVAL } from '../modules/local/samtools_merge_on_interval'
@@ -81,7 +81,7 @@ workflow PARSEC {
 
 
     // Validate input parameters
-    if (params.imputation_tool != "stitch" & 
+    if (params.imputation_tool != "stitch" &
         params.imputation_tool != "glimpse" &
         params.imputation_tool != "beagle4"
         ) {
@@ -90,7 +90,7 @@ workflow PARSEC {
 
     if (params.imputation_tool == "glimpse" & !params.ref_panel) {
         exit 1, 'Imputation tool Glimpse requires a reference panel supplied with --ref_panel'
-    } else if (params.imputation_tool == "stitch" | 
+    } else if (params.imputation_tool == "stitch" |
         (params.imputation_tool == "beagle4" & !params.ref_panel)) {
         reference_panel = null
     } else if (params.imputation_tool=="glimpse" || params.imputation_tool=="beagle4") {
@@ -99,8 +99,8 @@ workflow PARSEC {
             [
                 [ id:"reference panel" ],
                 it
-            ]}  
-    } 
+            ]}
+    }
 
     // //
     // // SUBWORKFLOW: Read in samplesheet, validate and stage input files
@@ -134,7 +134,7 @@ workflow PARSEC {
         .set { indexed_bams }
 
     reference_genome = Channel.fromPath(params.fasta, checkIfExists: true)
-        .map { it -> 
+        .map { it ->
         [
         [ id:"reference_genome" ],
             it
@@ -161,7 +161,7 @@ workflow PARSEC {
     chrom_sizes = MAKE_GENOME_FILES.out.chrom_sizes.map { it -> it[1]}
 
 
-    /// 
+    ///
     /// Select subset of genome
     ///
     if (params.genome_subset != null){
@@ -193,7 +193,7 @@ workflow PARSEC {
 
     ///
     /// Turn interval files into one bed file per line/chunk
-    /// 
+    ///
     bedFiles
         .flatMap { meta,bed,sloppedBed ->
             lines = bed.readLines()
@@ -217,7 +217,7 @@ workflow PARSEC {
             imputation: [ it[0], it[2] ]
         }
         .set { intervals }
-        
+
     ///
     /// Read interval ids to update the meta map
     /// [ chunk_id, interval ]
@@ -228,10 +228,10 @@ workflow PARSEC {
         .set { intervals_for_calling }
         // [meta, interval]
 
-    intervals_for_calling.collectFile(sort: true) { it -> 
+    intervals_for_calling.collectFile(sort: true) { it ->
         [ it[0].id + ".bed", it[1] ]
     }.merge(intervals_for_calling) // bed, meta, interval
-    .map { it -> [ it[1], it[0] ] } 
+    .map { it -> [ it[1], it[0] ] }
     .set { intervals_for_calling_as_bed } // meta, bed
 
     intervals.imputation
@@ -239,7 +239,7 @@ workflow PARSEC {
             it -> [[ id:it[0]],it[1]]
         }
         .set { intervals_for_imputation }
-        
+
 
     if ( !params.sparse_variants )  {
         CALLING(
@@ -253,7 +253,7 @@ workflow PARSEC {
             CALLING.out.vcf
                 .set { ch_sparse_variants }
         }
-        
+
     } else {
         ch_sparse_variants = [
             [ id:"sparse_variants" ],
@@ -274,7 +274,7 @@ workflow PARSEC {
             reference_panel
         )
     }
-    
+
     emit:
         versions       = ch_versions                 // channel: [ path(versions.yml) ]
 
