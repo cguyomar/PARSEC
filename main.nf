@@ -60,19 +60,14 @@ workflow NF_SPARSE {
 //
 workflow NFCORE_PARSEC {
 
-    take:
-    samplesheet // channel: samplesheet read in from --input
-
     main:
 
     //
     // WORKFLOW: Run pipeline
     //
-    PARSEC (
-        samplesheet
-    )
-    emit:
-    multiqc_report = PARSEC.out.multiqc_report // channel: /path/to/multiqc_report.html
+    PARSEC ()
+    // emit:
+    // multiqc_report = PARSEC.out.multiqc_report // channel: /path/to/multiqc_report.html
 }
 /*
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -92,15 +87,13 @@ workflow {
         params.monochrome_logs,
         args,
         params.outdir,
-        params.input
+        // params.input
     )
 
     //
     // WORKFLOW: Run main workflow
     //
-    NFCORE_PARSEC (
-        PIPELINE_INITIALISATION.out.samplesheet
-    )
+    NFCORE_PARSEC ()
     //
     // SUBWORKFLOW: Run completion tasks
     //
@@ -111,7 +104,7 @@ workflow {
         params.outdir,
         params.monochrome_logs,
         params.hook_url,
-        NFCORE_PARSEC.out.multiqc_report
+        // NFCORE_PARSEC.out.multiqc_report
     )
 }
 
