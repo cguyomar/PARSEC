@@ -138,8 +138,6 @@ workflow PIPELINE_COMPLETION {
             imNotification(summary_params, hook_url)
         }
     }
-
-    }
 }
 
 /*
