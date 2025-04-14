@@ -8,8 +8,7 @@ process BCFTOOLS_VIEW {
         'biocontainers/bcftools:1.18--h8b25389_0' }"
 
     input:
-    tuple val(meta), path(vcf), path(index)
-    path(regions)
+    tuple val(meta), path(vcf), path(index), path(regions)
     path(targets)
     path(samples)
 
@@ -53,3 +52,4 @@ process BCFTOOLS_VIEW {
     END_VERSIONS
     """
 }
+

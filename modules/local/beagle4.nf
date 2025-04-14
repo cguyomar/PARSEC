@@ -39,6 +39,7 @@ process BEAGLE4_BEAGLE {
         avail_mem = (task.memory.mega*0.8).intValue()
     }
     """
+    export JAVA_TOOL_OPTIONS="-Xss32m"
     beagle -Xmx${avail_mem}M \\
         gl=${vcf} \\
         impute=true \\

@@ -105,6 +105,8 @@ workflow IMPUTATION {
 
     // What we want : meta, [bams], [bais], bamlist
 
+
+    if (params.imputation_tool == "stitch"){
     //Convert vcf to tab and split by chunk
 
     VCF_TO_TAB( sparse_vcf )
@@ -128,7 +130,6 @@ workflow IMPUTATION {
         positions.countLines() > 10
     } .set { positions }
 
-    if (params.imputation_tool == "stitch"){
         // Prepare stitch input
         positions.map { meta, pos -> 
             [ 
@@ -260,7 +261,7 @@ workflow IMPUTATION {
             BEAGLE4_BEAGLE(
             sparse_vcf.collect(), // allows to run several times with only one vcf
             beagle_intervals,
-            [],
+            [[],[]],
             [],
             [],
             [],
@@ -269,7 +270,7 @@ workflow IMPUTATION {
             BEAGLE4_BEAGLE(
             sparse_vcf.collect(), // allows to run several times with only one vcf
             beagle_intervals,
-            ref_panel,
+            ref_panel.collect(),
             [],
             [],
             [],
@@ -288,24 +289,26 @@ workflow IMPUTATION {
         // meta, vcf, tbi
 
         // Write intervals to files as the bcftools view module does not accept vals
-        calling_intervals.collectFile(sort: false) { it -> 
-            [ it[0].id + ".bed", it[1] ]
-        }.merge(calling_intervals) // bed, meta, interval
-        .map { it -> [ it[1], it[0] ] }
-        .set { calling_intervals_as_bed } // meta, bed
+	calling_intervals
+            .map { meta, interval_val ->
+                def bed_file = file("${meta.id}.bed")
+                bed_file.text = interval_val  // write the val into the file
+                return [meta, bed_file]
+            }
+            .set { calling_intervals_as_bed }	
+	indexed_vcfs.view()
+	calling_intervals_as_bed.view()
 
         // bcftools view
         indexed_vcfs
-        .join(calling_intervals_as_bed)
-            .multiMap { it -> 
-                intervals: it[3]
-                vcf: [ it[0], it[1], it[2] ]
-            }
+        .join(calling_intervals_as_bed)   // meta, vcf, tbi, bed
             .set { indexed_vcf_for_view }  
 
+	indexed_vcf_for_view.view()
+     
+
         BCFTOOLS_VIEW(
-            indexed_vcf_for_view.vcf,
-            indexed_vcf_for_view.intervals,
+            indexed_vcf_for_view,
             [],
             []
         )
@@ -314,7 +317,7 @@ workflow IMPUTATION {
         TABIX_BEAGLE( BCFTOOLS_VIEW.out.vcf )
 
         TABIX_BEAGLE.out.tbi
-        .join(BEAGLE4_BEAGLE.out.vcf)
+        .join(BCFTOOLS_VIEW.out.vcf)
         .map{ it -> [ [id: "imputed"], it[2], it[1] ] }
         .groupTuple() 
         .set { beagle_vcf_indexed }
