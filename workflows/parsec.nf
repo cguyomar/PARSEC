@@ -84,7 +84,7 @@ workflow PARSEC {
         params.imputation_tool != "glimpse" &
         params.imputation_tool != "beagle4"
         ) {
-        exit 1, 'Imputation tool should be one of stich, glimpse, beagle4'
+        exit 1, 'Imputation tool should be one of stitch, glimpse, beagle4'
     }
 
     if (params.imputation_tool == "glimpse" & !params.ref_panel) {
