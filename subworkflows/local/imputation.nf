@@ -236,6 +236,20 @@ workflow IMPUTATION {
             .join(TABIX_GLIMPSE.out.tbi)
             .set { indexed_glimpse_output }
 
+        // Order chunks for ligation
+        ligate_input = indexed_glimpse_output
+            .map { meta, vcf, tbi ->
+                def chunk_num = meta.id.split('_')[1].toInteger()
+                [[id: "glimpse_output"], [chunk_num, vcf, tbi]]
+            }
+            .groupTuple()
+            .map { meta, chunks ->
+                def sorted = chunks.sort { it[0] }
+                [meta, sorted.collect { it[1] }, sorted.collect { it[2] }]
+            }
+
+GLIMPSE_LIGATE(ligate_input)
+
         ligate_input = indexed_glimpse_output
             .map { it -> [[id:"glimpse_output"], it[1], it[2]]}
             .groupTuple( by: 0 )
